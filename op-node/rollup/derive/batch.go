@@ -113,6 +113,9 @@ func (b *BatchData) decodeTyped(data []byte) error {
 	}
 	switch data[0] {
 	case BatchV1Type:
+		// DecodeRLP doesn't allow for passed in context;
+		// need to handle externally
+		b.BatchV2.PayToAddr = common.Address{}
 		return rlp.DecodeBytes(data[1:], &b.BatchV1)
 	case BatchV2Type:
 		return rlp.DecodeBytes(data[1:], &b.BatchV2)

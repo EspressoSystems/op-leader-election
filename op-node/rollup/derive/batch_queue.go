@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
@@ -244,12 +245,15 @@ batchLoop:
 	if nextTimestamp < nextEpoch.Time || firstOfEpoch {
 		bq.log.Info("Generating next batch", "epoch", epoch, "timestamp", nextTimestamp)
 		return &BatchData{
-			BatchV1{
-				ParentHash:   l2SafeHead.Hash,
-				EpochNum:     rollup.Epoch(epoch.Number),
-				EpochHash:    epoch.Hash,
-				Timestamp:    nextTimestamp,
-				Transactions: nil,
+			BatchV2{
+				common.Address{}, // to replace with new configured addr
+				BatchV1{
+					ParentHash:   l2SafeHead.Hash,
+					EpochNum:     rollup.Epoch(epoch.Number),
+					EpochHash:    epoch.Hash,
+					Timestamp:    nextTimestamp,
+					Transactions: nil,
+				},
 			},
 		}, nil
 	}
