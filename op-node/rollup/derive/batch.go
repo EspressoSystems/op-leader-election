@@ -47,6 +47,7 @@ type BatchV1 struct {
 }
 
 type BatchV2 struct {
+	Version   uint32
 	PayToAddr common.Address
 	BatchV1
 }
@@ -115,6 +116,7 @@ func (b *BatchData) decodeTyped(data []byte) error {
 	case BatchV1Type:
 		// DecodeRLP doesn't allow for passed in context;
 		// need to handle externally
+		b.BatchV2.Version = 1
 		b.BatchV2.PayToAddr = common.Address{}
 		return rlp.DecodeBytes(data[1:], &b.BatchV1)
 	case BatchV2Type:

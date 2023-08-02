@@ -49,6 +49,7 @@ func b(timestamp uint64, epoch eth.L1BlockRef) *BatchData {
 	rng := rand.New(rand.NewSource(int64(timestamp)))
 	data := testutils.RandomData(rng, 20)
 	return &BatchData{BatchV2{
+		2,
 		common.Address{},
 		BatchV1{
 			ParentHash:   mockHash(timestamp-2, 2),

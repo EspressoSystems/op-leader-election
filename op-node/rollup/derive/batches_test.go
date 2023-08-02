@@ -174,7 +174,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2A1.ParentHash,
 					EpochNum:     rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:    l2A1.L1Origin.Hash,
@@ -190,7 +190,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2A1.ParentHash,
 					EpochNum:     rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:    l2A1.L1Origin.Hash,
@@ -206,7 +206,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2A1.ParentHash,
 					EpochNum:     rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:    l2A1.L1Origin.Hash,
@@ -222,7 +222,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2A1.ParentHash,
 					EpochNum:     rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:    l2A1.L1Origin.Hash,
@@ -238,7 +238,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   testutils.RandomHash(rng),
 					EpochNum:     rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:    l2A1.L1Origin.Hash,
@@ -254,7 +254,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1F, // included in 5th block after epoch of batch, while seq window is 4
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2A1.ParentHash,
 					EpochNum:     rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:    l2A1.L1Origin.Hash,
@@ -270,7 +270,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2B0, // we already moved on to B
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1C,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2B0.Hash,                          // build on top of safe head to continue
 					EpochNum:     rollup.Epoch(l2A3.L1Origin.Number), // epoch A is no longer valid
 					EpochHash:    l2A3.L1Origin.Hash,
@@ -286,7 +286,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A3,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1C,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2B0.ParentHash,
 					EpochNum:     rollup.Epoch(l2B0.L1Origin.Number),
 					EpochHash:    l2B0.L1Origin.Hash,
@@ -302,7 +302,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A3,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1D,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2B0.ParentHash,
 					EpochNum:     rollup.Epoch(l1C.Number), // invalid, we need to adopt epoch B before C
 					EpochHash:    l1C.Hash,
@@ -318,7 +318,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A3,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1C,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2B0.ParentHash,
 					EpochNum:     rollup.Epoch(l2B0.L1Origin.Number),
 					EpochHash:    l1A.Hash, // invalid, epoch hash should be l1B
@@ -334,7 +334,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A3,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{ // we build l2A4, which has a timestamp of 2*4 = 8 higher than l2A0
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{ // we build l2A4, which has a timestamp of 2*4 = 8 higher than l2A0
 					ParentHash:   l2A4.ParentHash,
 					EpochNum:     rollup.Epoch(l2A4.L1Origin.Number),
 					EpochHash:    l2A4.L1Origin.Hash,
@@ -350,7 +350,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2X0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1Z,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2Y0.ParentHash,
 					EpochNum:     rollup.Epoch(l2Y0.L1Origin.Number),
 					EpochHash:    l2Y0.L1Origin.Hash,
@@ -366,7 +366,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A3,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1BLate,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{ // l2A4 time < l1BLate time, so we cannot adopt origin B yet
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{ // l2A4 time < l1BLate time, so we cannot adopt origin B yet
 					ParentHash:   l2A4.ParentHash,
 					EpochNum:     rollup.Epoch(l2A4.L1Origin.Number),
 					EpochHash:    l2A4.L1Origin.Hash,
@@ -382,7 +382,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2X0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1Z,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash:   l2Y0.ParentHash,
 					EpochNum:     rollup.Epoch(l2Y0.L1Origin.Number),
 					EpochHash:    l2Y0.L1Origin.Hash,
@@ -398,7 +398,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A3,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{ // we build l2A4, which has a timestamp of 2*4 = 8 higher than l2A0
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{ // we build l2A4, which has a timestamp of 2*4 = 8 higher than l2A0
 					ParentHash:   l2A4.ParentHash,
 					EpochNum:     rollup.Epoch(l2A4.L1Origin.Number),
 					EpochHash:    l2A4.L1Origin.Hash,
@@ -414,7 +414,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A3,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1C,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{ // we build l2A4, which has a timestamp of 2*4 = 8 higher than l2A0
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{ // we build l2A4, which has a timestamp of 2*4 = 8 higher than l2A0
 					ParentHash:   l2A4.ParentHash,
 					EpochNum:     rollup.Epoch(l2A4.L1Origin.Number),
 					EpochHash:    l2A4.L1Origin.Hash,
@@ -430,7 +430,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash: l2A1.ParentHash,
 					EpochNum:   rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:  l2A1.L1Origin.Hash,
@@ -448,7 +448,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash: l2A1.ParentHash,
 					EpochNum:   rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:  l2A1.L1Origin.Hash,
@@ -466,7 +466,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A0,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash: l2A1.ParentHash,
 					EpochNum:   rollup.Epoch(l2A1.L1Origin.Number),
 					EpochHash:  l2A1.L1Origin.Hash,
@@ -485,7 +485,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A3,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1C,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{
 					ParentHash: l2B0.ParentHash,
 					EpochNum:   rollup.Epoch(l2B0.L1Origin.Number),
 					EpochHash:  l2B0.L1Origin.Hash,
@@ -504,7 +504,7 @@ func TestValidBatch(t *testing.T) {
 			L2SafeHead: l2A2,
 			Batch: BatchWithL1InclusionBlock{
 				L1InclusionBlock: l1B,
-				Batch: &BatchData{BatchV2{common.Address{}, BatchV1{ // we build l2B0', which starts a new epoch too early
+				Batch: &BatchData{BatchV2{2, common.Address{}, BatchV1{ // we build l2B0', which starts a new epoch too early
 					ParentHash:   l2A2.Hash,
 					EpochNum:     rollup.Epoch(l2B0.L1Origin.Number),
 					EpochHash:    l2B0.L1Origin.Hash,

@@ -43,7 +43,8 @@ func TestAttributesQueue(t *testing.T) {
 	safeHead.Time = l1Info.InfoTime
 
 	batch := &BatchData{BatchV2{
-		cfg.DepositContractAddress,
+		2,
+		common.Address{},
 		BatchV1{
 			ParentHash:   safeHead.Hash,
 			EpochNum:     rollup.Epoch(l1Info.InfoNum),

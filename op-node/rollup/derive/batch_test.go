@@ -12,7 +12,7 @@ import (
 func TestBatchRoundTrip(t *testing.T) {
 	batches := []*BatchData{
 		{
-			BatchV2: BatchV2{common.Address{}, BatchV1{
+			BatchV2: BatchV2{2, common.Address{}, BatchV1{
 				ParentHash:   common.Hash{},
 				EpochNum:     0,
 				Timestamp:    0,
@@ -20,7 +20,7 @@ func TestBatchRoundTrip(t *testing.T) {
 			}},
 		},
 		{
-			BatchV2: BatchV2{common.Address{}, BatchV1{
+			BatchV2: BatchV2{2, common.Address{}, BatchV1{
 				ParentHash:   common.Hash{31: 0x42},
 				EpochNum:     1,
 				Timestamp:    1647026951,

@@ -255,6 +255,7 @@ func blockToBatch(block *types.Block) (*derive.BatchData, error) {
 
 	return &derive.BatchData{
 		BatchV2: derive.BatchV2{
+			Version:   2,
 			PayToAddr: common.Address{},
 			BatchV1: derive.BatchV1{
 				ParentHash:   block.ParentHash(),
