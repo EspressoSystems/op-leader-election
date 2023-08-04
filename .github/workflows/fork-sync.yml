@@ -17,3 +17,4 @@ jobs:
           repo: optimism
           base: op-leader-election # our default branch
           head: develop # upstream branch
+          auto_merge: false
