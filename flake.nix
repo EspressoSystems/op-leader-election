@@ -54,6 +54,9 @@
             # Python
             (python3.withPackages (ps: with ps; [ ]))
             jq
+
+            # geth node
+            go-ethereum
           ];
         };
       });

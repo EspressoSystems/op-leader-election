@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"errors"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -22,17 +23,34 @@ const (
 // PreimageOracleData encapsulates the preimage oracle data
 // to load into the onchain oracle.
 type PreimageOracleData struct {
-	IsLocal    bool
-	OracleKey  []byte
-	OracleData []byte
+	IsLocal      bool
+	OracleKey    []byte
+	OracleData   []byte
+	OracleOffset uint32
+}
+
+// GetType returns the type for the preimage oracle data.
+func (p *PreimageOracleData) GetType() *big.Int {
+	return big.NewInt(int64(p.OracleKey[0]))
+}
+
+// GetIdent returns the ident for the preimage oracle data.
+func (p *PreimageOracleData) GetIdent() *big.Int {
+	return big.NewInt(0).SetBytes(p.OracleKey[1:])
+}
+
+// GetPreimageWithoutSize returns the preimage for the preimage oracle data.
+func (p *PreimageOracleData) GetPreimageWithoutSize() []byte {
+	return p.OracleData[8:]
 }
 
 // NewPreimageOracleData creates a new [PreimageOracleData] instance.
-func NewPreimageOracleData(key []byte, data []byte) PreimageOracleData {
+func NewPreimageOracleData(key []byte, data []byte, offset uint32) PreimageOracleData {
 	return PreimageOracleData{
-		IsLocal:    len(key) > 0 && key[0] == byte(1),
-		OracleKey:  key,
-		OracleData: data,
+		IsLocal:      len(key) > 0 && key[0] == byte(1),
+		OracleKey:    key,
+		OracleData:   data,
+		OracleOffset: offset,
 	}
 }
 
@@ -42,6 +60,12 @@ type StepCallData struct {
 	IsAttack   bool
 	StateData  []byte
 	Proof      []byte
+}
+
+// OracleUpdater is a generic interface for updating oracles.
+type OracleUpdater interface {
+	// UpdateOracle updates the oracle with the given data.
+	UpdateOracle(ctx context.Context, data PreimageOracleData) error
 }
 
 // TraceProvider is a generic way to get a claim value at a specific step in the trace.
@@ -60,7 +84,7 @@ type TraceProvider interface {
 	GetPreimage(ctx context.Context, i uint64) (preimage []byte, proofData []byte, err error)
 
 	// AbsolutePreState is the pre-image value of the trace that transitions to the trace value at index 0
-	AbsolutePreState(ctx context.Context) []byte
+	AbsolutePreState(ctx context.Context) ([]byte, error)
 }
 
 // ClaimData is the core of a claim. It must be unique inside a specific game.
