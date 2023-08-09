@@ -1,0 +1,4 @@
+version: "1"
+rules:
+  - base: op-leader-election
+    upstream: ethereum-optimism:develop
