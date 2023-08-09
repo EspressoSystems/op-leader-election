@@ -42,12 +42,16 @@ func TestAttributesQueue(t *testing.T) {
 	safeHead.L1Origin = l1Info.ID()
 	safeHead.Time = l1Info.InfoTime
 
-	batch := &BatchData{BatchV1{
-		ParentHash:   safeHead.Hash,
-		EpochNum:     rollup.Epoch(l1Info.InfoNum),
-		EpochHash:    l1Info.InfoHash,
-		Timestamp:    safeHead.Time + cfg.BlockTime,
-		Transactions: []eth.Data{eth.Data("foobar"), eth.Data("example")},
+	batch := &BatchData{BatchV2{
+		2,
+		common.Address{},
+		BatchV1{
+			ParentHash:   safeHead.Hash,
+			EpochNum:     rollup.Epoch(l1Info.InfoNum),
+			EpochHash:    l1Info.InfoHash,
+			Timestamp:    safeHead.Time + cfg.BlockTime,
+			Transactions: []eth.Data{eth.Data("foobar"), eth.Data("example")},
+		},
 	}}
 
 	parentL1Cfg := eth.SystemConfig{

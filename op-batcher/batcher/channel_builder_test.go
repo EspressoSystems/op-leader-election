@@ -323,8 +323,12 @@ func FuzzSeqWindowClose(f *testing.F) {
 		// Check the timeout
 		cb.timeout = timeout
 		cb.updateSwTimeout(&derive.BatchData{
-			BatchV1: derive.BatchV1{
-				EpochNum: rollup.Epoch(epochNum),
+			BatchV2: derive.BatchV2{
+				Version:   2,
+				PayToAddr: common.Address{},
+				BatchV1: derive.BatchV1{
+					EpochNum: rollup.Epoch(epochNum),
+				},
 			},
 		})
 		calculatedTimeout := epochNum + seqWindowSize - subSafetyMargin
@@ -355,8 +359,12 @@ func FuzzSeqWindowZeroTimeoutClose(f *testing.F) {
 		// Check the timeout
 		cb.timeout = 0
 		cb.updateSwTimeout(&derive.BatchData{
-			BatchV1: derive.BatchV1{
-				EpochNum: rollup.Epoch(epochNum),
+			BatchV2: derive.BatchV2{
+				Version:   2,
+				PayToAddr: common.Address{},
+				BatchV1: derive.BatchV1{
+					EpochNum: rollup.Epoch(epochNum),
+				},
 			},
 		})
 		calculatedTimeout := epochNum + seqWindowSize - subSafetyMargin
@@ -560,7 +568,9 @@ func TestChannelBuilder_AddBlock(t *testing.T) {
 	require.NoError(t, cb.co.Flush())
 
 	// Check the fields reset in the AddBlock function
-	require.Equal(t, 74, cb.co.InputBytes())
+	// require.Equal(t, 74, cb.co.InputBytes())
+	// increased by the addition of V2 fields
+	require.Equal(t, 98, cb.co.InputBytes())
 	require.Equal(t, 1, len(cb.blocks))
 	require.Equal(t, 0, len(cb.frames))
 	require.True(t, cb.IsFull())
