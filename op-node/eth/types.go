@@ -293,7 +293,5 @@ type SystemConfig struct {
 	GasLimit uint64 `json:"gasLimit"`
 	// BatcherHashVersion identifies the version of the batcher hash.
 	BatcherHashVersion uint8 `json:"batcherHashVersion"`
-	// The address of the Batch inbox contract.
-	BatchInboxAddress common.Address `json:"batchInboxAddress"`
 	// More fields can be added for future SystemConfig versions.
 }
