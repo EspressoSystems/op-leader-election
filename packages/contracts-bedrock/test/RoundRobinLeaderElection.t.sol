@@ -3,6 +3,7 @@ pragma solidity 0.8.15;
 import {Test} from "forge-std/Test.sol";
 
 import "../src/L1/RoundRobinLeaderElection.sol";
+import "../src/L1/LeaderElectionBatchInbox.sol";
 
 contract RoundRobinLeaderElectionTest is Test {
     RoundRobinLeaderElection leaderContract;
@@ -44,5 +45,41 @@ contract RoundRobinLeaderElectionTest is Test {
         // When the contract is deployed the leader is the first participant
         assertTrue(leaderContract.isCurrentLeader(vm.addr(1), DEPLOYMENT_BLOCK_NUMBER));
         assertTrue(leaderContract.isCurrentLeader(vm.addr(2), DEPLOYMENT_BLOCK_NUMBER + 1));
+    }
+
+    function test_rrElection_nextBlocksAsLeader() external {
+        // If the caller is not as participant return the tuple (LeaderStatus.Invalid, 0,0,0)
+        address notALeader = vm.addr(1234);
+        vm.prank(notALeader);
+
+        ILeaderElectionBatchInbox.LeaderStatusFlags flag;
+        uint256 blockNumber;
+        uint256 bitmap;
+        uint8 horizon;
+        (flag, blockNumber, bitmap, horizon) = leaderContract.nextBlocksAsLeader();
+        assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Invalid);
+        assertEq(0, blockNumber);
+        assertEq(0, bitmap);
+        assertEq(0, horizon);
+
+        // Happy case for first leader
+        address leader = vm.addr(1);
+        vm.prank(leader);
+
+        (flag, blockNumber, bitmap, horizon) = leaderContract.nextBlocksAsLeader();
+        assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
+        assertEq(100, blockNumber);
+        assertEq(1099511627777, bitmap); // Corresponds to bitmap [1,0,0,0,0,1,0,0,0,0]
+        assertEq(10, horizon);
+
+        // Happy case for third leader
+        leader = vm.addr(3);
+        vm.prank(leader);
+
+        assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
+        (flag, blockNumber, bitmap, horizon) = leaderContract.nextBlocksAsLeader();
+        assertEq(100, blockNumber);
+        assertEq(72057594037993472, bitmap); // Corresponds to bitmap [0,0,1,0,0,0,0,1,0,0]
+        assertEq(10, horizon);
     }
 }

@@ -16,7 +16,6 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
     uint256 public creation_block_number;
     uint8 constant HORIZON = 10; // Number of leader slots that can be checked in advance
 
-    // TODO gas optimization
     function _uint256FromBytesLittleEndian(uint8[HORIZON] memory input) private pure returns (uint256) {
         uint256 r = 0;
         for (uint256 i = 0; i < input.length; i++) {
@@ -62,12 +61,13 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
             // Build the bitmap
             uint8[HORIZON] memory leaderSlots;
             for (uint256 i = 0; i < HORIZON; i++) {
-                if (this.isCurrentLeader(msg.sender, block.number)) {
+                if (this.isCurrentLeader(msg.sender, block.number + i)) {
                     leaderSlots[i] = 1;
                 } else {
                     leaderSlots[i] = 0;
                 }
             }
+
             uint256 bitmapAsInt = _uint256FromBytesLittleEndian(leaderSlots);
             return (LeaderStatusFlags.Scheduled, block.number, bitmapAsInt, HORIZON);
         }
