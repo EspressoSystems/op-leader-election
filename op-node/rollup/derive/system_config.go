@@ -88,9 +88,12 @@ func ProcessSystemConfigUpdateLogEvent(destSysCfg *eth.SystemConfig, ev *types.L
 		if err != nil {
 			return NewCriticalError(errors.New("could not read batcher hash"))
 		}
-
+		// Update the batcher address if the version byte is 0 (version 1)
+		if version == 0 {
+			destSysCfg.BatcherAddr = address
+		}
 		destSysCfg.BatcherHashVersion = version
-		destSysCfg.BatcherAddr = address
+
 		return nil
 	case SystemConfigUpdateGasConfig:
 		if pointer, err := solabi.ReadUint64(reader); err != nil || pointer != 32 {
