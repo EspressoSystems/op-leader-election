@@ -1176,7 +1176,7 @@ workflows:
           package_name: core-utils
           requires:
             - pnpm-monorepo
-      - contracts-bedrock-tests
+      # - contracts-bedrock-tests # TODO: (MA) enable when we have access to xlarge resource class
       - contracts-bedrock-coverage
       - contracts-bedrock-checks:
           requires:
@@ -1275,9 +1275,10 @@ workflows:
       - go-test:
           name: op-chain-ops-tests
           module: op-chain-ops
-      - go-test:
-          name: op-node-tests
-          module: op-node
+      # TODO: (MA) enable `op-node-tests` once we have xlarge resource class
+      # - go-test:
+      #     name: op-node-tests
+      #     module: op-node
           # TODO: override resource class
       - go-test:
           name: op-proposer-tests
@@ -1314,7 +1315,7 @@ workflows:
             - op-batcher-tests
             - op-bindings-tests
             - op-chain-ops-tests
-            - op-node-tests
+            # - op-node-tests # TODO: (MA) uncomment when `op-node-tests` are enabled
             - op-proposer-tests
             - op-challenger-tests
             - op-program-tests
