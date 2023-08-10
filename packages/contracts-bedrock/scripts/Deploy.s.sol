@@ -404,6 +404,7 @@ contract Deploy is Deployer {
             _batcherHash: batcherHash,
             _gasLimit: uint64(cfg.l2GenesisBlockGasLimit()),
             _unsafeBlockSigner: cfg.p2pSequencerAddress(),
+            _batchInboxAddr: cfg.initialBatchInboxAddr(),
             _config: Constants.DEFAULT_RESOURCE_CONFIG()
         });
 
@@ -515,6 +516,7 @@ contract Deploy is Deployer {
                     batcherHash,
                     uint64(cfg.l2GenesisBlockGasLimit()),
                     cfg.p2pSequencerAddress(),
+                    cfg.initialBatchInboxAddr(),
                     Constants.DEFAULT_RESOURCE_CONFIG()
                 )
             )

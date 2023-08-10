@@ -204,6 +204,7 @@ contract Portal_Initializer is L2OutputOracle_Initializer {
             _batcherHash: bytes32(0),
             _gasLimit: 30_000_000,
             _unsafeBlockSigner: address(0),
+            _batchInboxAddr: address(2),
             _config: config
         });
 

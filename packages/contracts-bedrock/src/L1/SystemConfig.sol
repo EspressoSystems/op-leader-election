@@ -18,11 +18,14 @@ contract SystemConfig is OwnableUpgradeable, Semver {
     /// @custom:value GAS_LIMIT            Represents an update to gas limit on L2.
     /// @custom:value UNSAFE_BLOCK_SIGNER  Represents an update to the signer key for unsafe
     ///                                    block distrubution.
+    /// @custom:value BATCH_INBOX_ADDR     Represents an update to the batch inbox contract address.
+
     enum UpdateType {
         BATCHER,
         GAS_CONFIG,
         GAS_LIMIT,
-        UNSAFE_BLOCK_SIGNER
+        UNSAFE_BLOCK_SIGNER,
+        BATCH_INBOX_ADDR
     }
 
     /// @notice Version identifier, used for upgrades.
@@ -48,6 +51,10 @@ contract SystemConfig is OwnableUpgradeable, Semver {
     /// @notice L2 block gas limit.
     uint64 public gasLimit;
 
+    /// @notice Batch inbox address.
+    ///         Must be the address of an instance of ILeaderElectionBatchInbox
+    address public batchInboxAddr;
+
     /// @notice The configuration for the deposit fee market.
     ///         Used by the OptimismPortal to meter the cost of buying L2 gas on L1.
     ///         Set as internal with a getter so that the struct is returned instead of a tuple.
@@ -59,7 +66,7 @@ contract SystemConfig is OwnableUpgradeable, Semver {
     /// @param data       Encoded update data.
     event ConfigUpdate(uint256 indexed version, UpdateType indexed updateType, bytes data);
 
-    /// @custom:semver 1.3.1
+    /// @custom:semver 1.4.0
     /// @notice Constructs the SystemConfig contract.
     /// @param _owner             Initial owner of the contract.
     /// @param _overhead          Initial overhead value.
@@ -67,6 +74,7 @@ contract SystemConfig is OwnableUpgradeable, Semver {
     /// @param _batcherHash       Initial batcher hash.
     /// @param _gasLimit          Initial gas limit.
     /// @param _unsafeBlockSigner Initial unsafe block signer address.
+    /// @param _batchInboxAddr    Initial batch inbox address.
     /// @param _config            Initial resource config.
     constructor(
         address _owner,
@@ -75,8 +83,9 @@ contract SystemConfig is OwnableUpgradeable, Semver {
         bytes32 _batcherHash,
         uint64 _gasLimit,
         address _unsafeBlockSigner,
+        address _batchInboxAddr,
         ResourceMetering.ResourceConfig memory _config
-    ) Semver(1, 3, 1) {
+    ) Semver(1, 4, 0) {
         initialize({
             _owner: _owner,
             _overhead: _overhead,
@@ -84,6 +93,7 @@ contract SystemConfig is OwnableUpgradeable, Semver {
             _batcherHash: _batcherHash,
             _gasLimit: _gasLimit,
             _unsafeBlockSigner: _unsafeBlockSigner,
+            _batchInboxAddr: _batchInboxAddr,
             _config: _config
         });
     }
@@ -96,6 +106,7 @@ contract SystemConfig is OwnableUpgradeable, Semver {
     /// @param _batcherHash       Initial batcher hash.
     /// @param _gasLimit          Initial gas limit.
     /// @param _unsafeBlockSigner Initial unsafe block signer address.
+    /// @param _batchInboxAddr    Initial batch inbox address.
     /// @param _config            Initial ResourceConfig.
     function initialize(
         address _owner,
@@ -104,6 +115,7 @@ contract SystemConfig is OwnableUpgradeable, Semver {
         bytes32 _batcherHash,
         uint64 _gasLimit,
         address _unsafeBlockSigner,
+        address _batchInboxAddr,
         ResourceMetering.ResourceConfig memory _config
     ) public initializer {
         __Ownable_init();
@@ -113,6 +125,7 @@ contract SystemConfig is OwnableUpgradeable, Semver {
         batcherHash = _batcherHash;
         gasLimit = _gasLimit;
         _setUnsafeBlockSigner(_unsafeBlockSigner);
+        _setBatchInboxAddr(_batchInboxAddr);
         _setResourceConfig(_config);
         require(_gasLimit >= minimumGasLimit(), "SystemConfig: gas limit too low");
     }
@@ -196,6 +209,20 @@ contract SystemConfig is OwnableUpgradeable, Semver {
     /// @return ResourceConfig
     function resourceConfig() external view returns (ResourceMetering.ResourceConfig memory) {
         return _resourceConfig;
+    }
+
+    /// @notice External setter for the batch inbox contract address.
+    /// @param _batchInboxAddr New batch inbox contract.
+    function setBatchInboxAddr(address _batchInboxAddr) external onlyOwner {
+        _setBatchInboxAddr(_batchInboxAddr);
+        bytes memory data = abi.encode(_batchInboxAddr);
+        emit ConfigUpdate(VERSION, UpdateType.BATCH_INBOX_ADDR, data);
+    }
+
+    /// @notice setter for the batch inbox contract address.
+    /// @param _batchInboxAddr New batch inbox contract.
+    function _setBatchInboxAddr(address _batchInboxAddr) internal {
+        batchInboxAddr = _batchInboxAddr;
     }
 
     /// @notice An external setter for the resource config.

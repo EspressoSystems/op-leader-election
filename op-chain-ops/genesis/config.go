@@ -62,6 +62,8 @@ type DeployConfig struct {
 	// BatchSenderAddress represents the initial sequencer account that authorizes batches.
 	// Transactions sent from this account to the batch inbox address are considered valid.
 	BatchSenderAddress common.Address `json:"batchSenderAddress"`
+	// Address of an initial Batch Inbox contract, which should mimic the BatcherHash check.
+	InitialBatchInboxAddr common.Address `json:"initialBatchInboxAddr"`
 	// L2OutputOracleSubmissionInterval is the number of L2 blocks between outputs that are submitted
 	// to the L2OutputOracle contract located on L1.
 	L2OutputOracleSubmissionInterval uint64 `json:"l2OutputOracleSubmissionInterval"`
@@ -232,6 +234,9 @@ func (d *DeployConfig) Check() error {
 	}
 	if d.BatchSenderAddress == (common.Address{}) {
 		return fmt.Errorf("%w: BatchSenderAddress cannot be address(0)", ErrInvalidDeployConfig)
+	}
+	if d.InitialBatchInboxAddr == (common.Address{}) {
+		return fmt.Errorf("%w: InitialBatchInboxAddr cannot be address(0)", ErrInvalidDeployConfig)
 	}
 	if d.L2OutputOracleSubmissionInterval == 0 {
 		return fmt.Errorf("%w: L2OutputOracleSubmissionInterval cannot be 0", ErrInvalidDeployConfig)

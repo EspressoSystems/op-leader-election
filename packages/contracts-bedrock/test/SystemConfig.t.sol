@@ -35,6 +35,7 @@ contract SystemConfig_Init is CommonTest {
             _batcherHash: bytes32(hex"abcd"),
             _gasLimit: 30_000_000,
             _unsafeBlockSigner: address(1),
+            _batchInboxAddr: address(2),
             _config: config
         });
     }
@@ -62,6 +63,7 @@ contract SystemConfig_Initialize_TestFail is SystemConfig_Init {
             _batcherHash: bytes32(hex""),
             _gasLimit: minimumGasLimit - 1,
             _unsafeBlockSigner: address(1),
+            _batchInboxAddr: address(2),
             _config: cfg
         });
     }
