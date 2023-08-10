@@ -83,9 +83,16 @@ func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetc
 			batcherAddr: batcherAddr,
 		}
 	} else {
-		return &DataSource{
-			open: true,
-			data: DataFromEVMTransactions(cfg, batcherAddr, txs, receipts, log.New("origin", block)),
+		if cfg.BatcherHashVersion == 0 {
+			return &DataSource{
+				open: true,
+				data: DataFromEVMTransactions(cfg, batcherAddr, txs, log.New("origin", block)),
+			}
+		} else {
+			return &DataSource{
+				open: true,
+				data: DataFromEVMTransactionsV2(cfg, batcherAddr, txs, receipts, log.New("origin", block)),
+			}
 		}
 	}
 }
@@ -96,12 +103,22 @@ func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetc
 func (ds *DataSource) Next(ctx context.Context) (eth.Data, error) {
 	if !ds.open {
 		if _, txs, err := ds.fetcher.InfoAndTxsByHash(ctx, ds.id.Hash); err == nil {
-			// TODO FetchReceipts also calls InfoAndTxsByHash, so the txs could
-			// also be returned from that call. This would save a round trip.
-			_, receipts, _ := ds.fetcher.FetchReceipts(ctx, ds.id.Hash)
-			// TODO handle errors during receipts fetching
-			ds.open = true
-			ds.data = DataFromEVMTransactions(ds.cfg, ds.batcherAddr, txs, receipts, log.New("origin", ds.id))
+			if ds.cfg.BatcherHashVersion == 0 {
+				ds.open = true
+				ds.data = DataFromEVMTransactions(ds.cfg, ds.batcherAddr, txs, log.New("origin", ds.id))
+			} else {
+				// TODO FetchReceipts also calls InfoAndTxsByHash, so the txs could
+				// also be returned from that call. This would save a round trip.
+				if _, receipts, err := ds.fetcher.FetchReceipts(ctx, ds.id.Hash); err == nil {
+					ds.open = true
+					ds.data = DataFromEVMTransactionsV2(ds.cfg, ds.batcherAddr, txs, receipts, log.New("origin", ds.id))
+					// TODO: handle errors in a single place, if possible.
+				} else if errors.Is(err, ethereum.NotFound) {
+					return nil, NewResetError(fmt.Errorf("failed to open calldata source: %w", err))
+				} else {
+					return nil, NewTemporaryError(fmt.Errorf("failed to open calldata source: %w", err))
+				}
+			}
 		} else if errors.Is(err, ethereum.NotFound) {
 			return nil, NewResetError(fmt.Errorf("failed to open calldata source: %w", err))
 		} else {
@@ -120,23 +137,36 @@ func (ds *DataSource) Next(ctx context.Context) (eth.Data, error) {
 // DataFromEVMTransactions filters all of the transactions and returns the calldata from transactions
 // that are sent to the batch inbox address from the batch sender address.
 // This will return an empty array if no valid transactions are found.
-func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
+func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, txs types.Transactions, log log.Logger) []eth.Data {
 	var out []eth.Data
 	l1Signer := config.L1Signer()
 	for j, tx := range txs {
 		if to := tx.To(); to != nil && *to == config.BatchInboxAddress {
-			receipt := receipts[j]
 			seqDataSubmitter, err := l1Signer.Sender(tx) // optimization: only derive sender if To is correct
 			if err != nil {
 				log.Warn("tx in inbox with invalid signature", "index", j, "err", err)
 				continue // bad signature, ignore
 			}
-			// TODO disable check for batcherAddr for version == 1
 			// some random L1 user might have sent a transaction to our batch inbox, ignore them
 			if seqDataSubmitter != batcherAddr {
 				log.Warn("tx in inbox with unauthorized submitter", "index", j, "err", err)
 				continue // not an authorized batch submitter, ignore
 			}
+			out = append(out, tx.Data())
+		}
+	}
+	return out
+}
+
+// DataFromEVMTransactionsV2 filters all of the transactions and returns the
+// calldata from transactions that are sent to the batch inbox contract and did
+// not revert. This will return an empty array if no valid transactions are
+// found.
+func DataFromEVMTransactionsV2(config *rollup.Config, batcherAddr common.Address, txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
+	var out []eth.Data
+	for j, tx := range txs {
+		if to := tx.To(); to != nil && *to == config.BatchInboxAddress {
+			receipt := receipts[j]
 			// Exclude transactions if L1 transaction reverted.
 			if receipt.Status != types.ReceiptStatusSuccessful {
 				log.Warn("tx in inbox reverted", "index", j)

@@ -121,10 +121,7 @@ func TestDataFromEVMTransactions(t *testing.T) {
 			}
 		}
 
-		// TODO generate proper test data for receipts
-		receipts := make([]*types.Receipt, len(txs))
-
-		out := DataFromEVMTransactions(cfg, batcherAddr, txs, receipts, testlog.Logger(t, log.LvlCrit))
+		out := DataFromEVMTransactions(cfg, batcherAddr, txs, testlog.Logger(t, log.LvlCrit))
 		require.ElementsMatch(t, expectedData, out)
 	}
 
