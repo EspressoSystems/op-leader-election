@@ -35,13 +35,13 @@ type MockDataSource struct {
 	mock.Mock
 }
 
-func (m *MockDataSource) OpenData(ctx context.Context, id eth.BlockID, batcherAddr common.Address) DataIter {
-	out := m.Mock.MethodCalled("OpenData", id, batcherAddr)
+func (m *MockDataSource) OpenData(ctx context.Context, id eth.BlockID, batcherAddr common.Address, batcherHashVersion uint8) DataIter {
+	out := m.Mock.MethodCalled("OpenData", id, batcherAddr, batcherHashVersion)
 	return out[0].(DataIter)
 }
 
-func (m *MockDataSource) ExpectOpenData(id eth.BlockID, iter DataIter, batcherAddr common.Address) {
-	m.Mock.On("OpenData", id, batcherAddr).Return(iter)
+func (m *MockDataSource) ExpectOpenData(id eth.BlockID, iter DataIter, batcherAddr common.Address, batcherHashVersion uint8) {
+	m.Mock.On("OpenData", id, batcherAddr, batcherHashVersion).Return(iter)
 }
 
 var _ DataAvailabilitySource = (*MockDataSource)(nil)
@@ -86,10 +86,11 @@ func TestL1RetrievalReset(t *testing.T) {
 	dataSrc := &MockDataSource{}
 	a := testutils.RandomBlockRef(rng)
 	l1Cfg := eth.SystemConfig{
-		BatcherAddr: common.Address{42},
+		BatcherAddr:        common.Address{42},
+		BatcherHashVersion: 0,
 	}
 
-	dataSrc.ExpectOpenData(a.ID(), &fakeDataIter{}, l1Cfg.BatcherAddr)
+	dataSrc.ExpectOpenData(a.ID(), &fakeDataIter{}, l1Cfg.BatcherAddr, l1Cfg.BatcherHashVersion)
 	defer dataSrc.AssertExpectations(t)
 
 	l1r := NewL1Retrieval(testlog.Logger(t, log.LvlError), dataSrc, nil)
@@ -118,7 +119,7 @@ func TestL1RetrievalNextData(t *testing.T) {
 		{
 			name:         "simple retrieval",
 			prevBlock:    a,
-			sysCfg:       eth.SystemConfig{BatcherAddr: common.Address{0x55}},
+			sysCfg:       eth.SystemConfig{BatcherAddr: common.Address{0x55}, BatcherHashVersion: 0},
 			prevErr:      nil,
 			openErr:      nil,
 			datas:        []eth.Data{testutils.RandomData(rng, 10), testutils.RandomData(rng, 10), testutils.RandomData(rng, 10), nil},
@@ -133,7 +134,7 @@ func TestL1RetrievalNextData(t *testing.T) {
 		{
 			name:         "fail to open data",
 			prevBlock:    a,
-			sysCfg:       eth.SystemConfig{BatcherAddr: common.Address{0x55}},
+			sysCfg:       eth.SystemConfig{BatcherAddr: common.Address{0x55}, BatcherHashVersion: 0},
 			prevErr:      nil,
 			openErr:      nil,
 			datas:        []eth.Data{nil},
@@ -147,7 +148,7 @@ func TestL1RetrievalNextData(t *testing.T) {
 			l1t := &MockL1Traversal{}
 			l1t.ExpectNextL1Block(test.prevBlock, test.prevErr)
 			dataSrc := &MockDataSource{}
-			dataSrc.ExpectOpenData(test.prevBlock.ID(), &fakeDataIter{data: test.datas, errs: test.datasErrs}, test.sysCfg.BatcherAddr)
+			dataSrc.ExpectOpenData(test.prevBlock.ID(), &fakeDataIter{data: test.datas, errs: test.datasErrs}, test.sysCfg.BatcherAddr, test.sysCfg.BatcherHashVersion)
 
 			ret := NewL1Retrieval(testlog.Logger(t, log.LvlCrit), dataSrc, l1t)
 

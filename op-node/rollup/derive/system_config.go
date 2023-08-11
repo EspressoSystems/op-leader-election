@@ -83,10 +83,12 @@ func ProcessSystemConfigUpdateLogEvent(destSysCfg *eth.SystemConfig, ev *types.L
 		if length, err := solabi.ReadUint64(reader); err != nil || length != 32 {
 			return NewCriticalError(errors.New("invalid length field"))
 		}
-
 		version, address, err := solabi.ReadBatcherHashWithVersion(reader)
 		if err != nil {
 			return NewCriticalError(errors.New("could not read batcher hash"))
+		}
+		if version >= 1 {
+			return NewCriticalError(errors.New("unsupported batcher hash version"))
 		}
 		// Update the batcher address if the version byte is 0 (version 1)
 		if version == 0 {
