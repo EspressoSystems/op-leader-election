@@ -31,6 +31,7 @@
             permittedInsecurePackages = [ "nodejs-16.20.1" ];
           };
         };
+        foundry = pkgs.callPackage ./foundry { };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -46,7 +47,8 @@
             yarn # `pnpm build` fails without this
 
             # Foundry, and tools like the anvil dev node
-            foundry-bin
+            # foundry-bin
+            foundry
 
             # Docker
             docker-compose # provides the `docker-compose` command
