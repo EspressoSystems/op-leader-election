@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-challenger/config"
 	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils/challenger"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 )
 
@@ -20,7 +21,6 @@ func (g *CannonGameHelper) StartChallenger(ctx context.Context, rollupCfg *rollu
 	opts := []challenger.Option{
 		func(c *config.Config) {
 			c.GameAddress = g.addr
-			c.GameDepth = cannonGameDepth
 			c.TraceType = config.TraceTypeCannon
 			c.AgreeWithProposedOutput = false
 			c.CannonL2 = l2Endpoint
@@ -28,7 +28,7 @@ func (g *CannonGameHelper) StartChallenger(ctx context.Context, rollupCfg *rollu
 			c.CannonDatadir = g.t.TempDir()
 			c.CannonServer = "../op-program/bin/op-program"
 			c.CannonAbsolutePreState = "../op-program/bin/prestate.json"
-			c.CannonSnapshotFreq = config.DefaultCannonSnapshotFreq
+			c.CannonSnapshotFreq = 10_000_000
 
 			genesisBytes, err := json.Marshal(l2Genesis)
 			g.require.NoError(err, "marshall l2 genesis config")
@@ -49,4 +49,8 @@ func (g *CannonGameHelper) StartChallenger(ctx context.Context, rollupCfg *rollu
 		_ = c.Close()
 	})
 	return c
+}
+
+func (g *FaultGameHelper) Address() common.Address {
+	return g.addr
 }

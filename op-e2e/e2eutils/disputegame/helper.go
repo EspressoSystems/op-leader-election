@@ -22,7 +22,6 @@ import (
 const alphabetGameType uint8 = 0
 const cannonGameType uint8 = 1
 const alphabetGameDepth = 4
-const cannonGameDepth = 64
 const lastAlphabetTraceIndex = 1<<alphabetGameDepth - 1
 
 type Status uint8
@@ -85,7 +84,7 @@ func NewFactoryHelper(t *testing.T, ctx context.Context, deployments *genesis.L1
 }
 
 func (h *FactoryHelper) StartAlphabetGame(ctx context.Context, claimedAlphabet string) *AlphabetGameHelper {
-	h.waitForProposals(ctx)
+	l2BlockNumber := h.waitForProposals(ctx)
 	l1Head := h.checkpointL1Block(ctx)
 
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
@@ -95,7 +94,7 @@ func (h *FactoryHelper) StartAlphabetGame(ctx context.Context, claimedAlphabet s
 	rootClaim, err := trace.Get(ctx, lastAlphabetTraceIndex)
 	h.require.NoError(err, "get root claim")
 	extraData := make([]byte, 64)
-	binary.BigEndian.PutUint64(extraData[24:], uint64(8))
+	binary.BigEndian.PutUint64(extraData[24:], l2BlockNumber)
 	binary.BigEndian.PutUint64(extraData[56:], l1Head.Uint64())
 	tx, err := h.factory.Create(h.opts, alphabetGameType, rootClaim, extraData)
 	h.require.NoError(err, "create fault dispute game")
@@ -109,27 +108,26 @@ func (h *FactoryHelper) StartAlphabetGame(ctx context.Context, claimedAlphabet s
 
 	return &AlphabetGameHelper{
 		FaultGameHelper: FaultGameHelper{
-			t:        h.t,
-			require:  h.require,
-			client:   h.client,
-			opts:     h.opts,
-			game:     game,
-			maxDepth: alphabetGameDepth,
-			addr:     createdEvent.DisputeProxy,
+			t:       h.t,
+			require: h.require,
+			client:  h.client,
+			opts:    h.opts,
+			game:    game,
+			addr:    createdEvent.DisputeProxy,
 		},
 		claimedAlphabet: claimedAlphabet,
 	}
 }
 
 func (h *FactoryHelper) StartCannonGame(ctx context.Context, rootClaim common.Hash) *CannonGameHelper {
-	h.waitForProposals(ctx)
+	l2BlockNumber := h.waitForProposals(ctx)
 	l1Head := h.checkpointL1Block(ctx)
 
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Minute)
 	defer cancel()
 
 	extraData := make([]byte, 64)
-	binary.BigEndian.PutUint64(extraData[24:], uint64(8))
+	binary.BigEndian.PutUint64(extraData[24:], l2BlockNumber)
 	binary.BigEndian.PutUint64(extraData[56:], l1Head.Uint64())
 	tx, err := h.factory.Create(h.opts, cannonGameType, rootClaim, extraData)
 	h.require.NoError(err, "create fault dispute game")
@@ -143,33 +141,42 @@ func (h *FactoryHelper) StartCannonGame(ctx context.Context, rootClaim common.Ha
 
 	return &CannonGameHelper{
 		FaultGameHelper: FaultGameHelper{
-			t:        h.t,
-			require:  h.require,
-			client:   h.client,
-			opts:     h.opts,
-			game:     game,
-			maxDepth: cannonGameDepth,
-			addr:     createdEvent.DisputeProxy,
+			t:       h.t,
+			require: h.require,
+			client:  h.client,
+			opts:    h.opts,
+			game:    game,
+			addr:    createdEvent.DisputeProxy,
 		},
 	}
 }
 
 // waitForProposals waits until there are at least two proposals in the output oracle
 // This is the minimum required for creating a game.
-func (h *FactoryHelper) waitForProposals(ctx context.Context) {
-
+// Returns the l2 block number of the latest available proposal
+func (h *FactoryHelper) waitForProposals(ctx context.Context) uint64 {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	err := utils.WaitFor(ctx, time.Second, func() (bool, error) {
-		index, err := h.l2oo.LatestOutputIndex(&bind.CallOpts{Context: ctx})
-		if err != nil {
-			h.t.Logf("Could not get latest output index: %v", err.Error())
-			return false, nil
-		}
-		h.t.Logf("Latest output index: %v", index)
-		return index.Cmp(big.NewInt(1)) >= 0, nil
-	})
+	opts := &bind.CallOpts{Context: ctx}
+	latestOutputIndex, err := utils.WaitAndGet(
+		ctx,
+		time.Second,
+		func() (*big.Int, error) {
+			index, err := h.l2oo.LatestOutputIndex(opts)
+			if err != nil {
+				h.t.Logf("Could not get latest output index: %v", err.Error())
+				return nil, nil
+			}
+			h.t.Logf("Latest output index: %v", index)
+			return index, nil
+		},
+		func(index *big.Int) bool {
+			return index != nil && index.Cmp(big.NewInt(1)) >= 0
+		})
 	h.require.NoError(err, "Did not get two output roots")
+	output, err := h.l2oo.GetL2Output(opts, latestOutputIndex)
+	h.require.NoErrorf(err, "Could not get latst output root index: %v", latestOutputIndex)
+	return output.L2BlockNumber.Uint64()
 }
 
 // checkpointL1Block stores the current L1 block in the oracle
