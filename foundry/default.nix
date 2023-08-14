@@ -1,4 +1,11 @@
-{ lib, stdenv, fetchFromGitHub, rustPlatform }:
+{ lib
+, stdenv
+, fetchFromGitHub
+, rustPlatform
+, rustc
+, libusb1
+, darwin
+}:
 
 rustPlatform.buildRustPackage rec {
   pname = "foundry";
@@ -14,13 +21,17 @@ rustPlatform.buildRustPackage rec {
   cargoLock = {
     lockFile = src + "/Cargo.lock";
     allowBuiltinFetchGit = true;
-    # outputHashes = {
-    #   "ethers-2.0.8" = "sha256-03vXjQymGuzL6RdihZkFf12Rlfygq3TlFwFgMTaJp7w=";
-    #   "revm-3.3.0" = "sha256-bj3Tdita5UEdHEzLBzMX8S6GcyzB53p+GWq5+o/YhqI=";
-    # };
   };
 
-  # Enable svm-rs to build without network access.
+  nativeBuildInputs = [
+    libusb1
+  ] ++ lib.optionals stdenv.isDarwin [ darwin.DarwinTools ];
+
+  buildInputs = lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.AppKit ];
+
+  # Tests fail
+  doCheck = false;
+
   env =
     let
       info =
@@ -29,21 +40,31 @@ rustPlatform.buildRustPackage rec {
           sha256 = "sha256:0qn4nlqd4yyxfjaywkfxsrrskyn6f2krvkp0cy98rha3m60b7ijf";
         } else {
           platform = "macosx-amd64";
-          sha256 = lib.fakeHash;
+          sha256 = "sha256:0bcq98dn79gjgrbmhwy6klb7vldx7bhgm896j6kmz33msa1xn5p6";
         };
-      src = builtins.fetchurl {
+      list = builtins.fetchurl {
         url = "https://binaries.soliditylang.org/${info.platform}/list.json";
         inherit (info) sha256;
       };
     in
     {
-      SVM_RELEASES_LIST_JSON = "${src}";
+      # Enable svm-rs to build without network access.
+      SVM_RELEASES_LIST_JSON = "${list}";
+      # Make `vergen` produce a meaningful version.
+      VERGEN_BUILD_TIMESTAMP = "0";
+      VERGEN_BUILD_SEMVER = version;
+      VERGEN_GIT_SHA = src.rev;
+      VERGEN_GIT_COMMIT_TIMESTAMP = "0";
+      VERGEN_GIT_BRANCH = "master";
+      VERGEN_RUSTC_SEMVER = rustc.version;
+      VERGEN_RUSTC_CHANNEL = "stable";
+      VERGEN_CARGO_PROFILE = "release";
     };
 
   meta = with lib; {
     description = "A blazing fast, portable and modular toolkit for Ethereum application development";
     homepage = "https://github.com/foundry-rs/foundry";
-    license = licenses.unlicense;
+    license = with licenses; [ mit apsl20 ];
     maintainers = [ ];
   };
 }
