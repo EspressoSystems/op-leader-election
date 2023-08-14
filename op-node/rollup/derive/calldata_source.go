@@ -94,7 +94,7 @@ func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetc
 		} else {
 			return &DataSource{
 				open: true,
-				data: DataFromEVMTransactionsV2(txs, receipts, log.New("origin", block)),
+				data: DataFromEVMTransactionsV2(cfg, txs, receipts, log.New("origin", block)),
 			}
 		}
 	}
@@ -114,7 +114,7 @@ func (ds *DataSource) Next(ctx context.Context) (eth.Data, error) {
 				// also be returned from that call. This would save a round trip.
 				if _, receipts, err := ds.fetcher.FetchReceipts(ctx, ds.id.Hash); err == nil {
 					ds.open = true
-					ds.data = DataFromEVMTransactionsV2(txs, receipts, log.New("origin", ds.id))
+					ds.data = DataFromEVMTransactionsV2(ds.cfg, txs, receipts, log.New("origin", ds.id))
 					// TODO: handle errors in a single place, if possible.
 				} else if errors.Is(err, ethereum.NotFound) {
 					return nil, NewResetError(fmt.Errorf("failed to open calldata source: %w", err))
@@ -165,16 +165,18 @@ func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, 
 // calldata from transactions that are sent to the batch inbox contract and did
 // not revert.
 // This will return an empty array if no valid transactions are found.
-func DataFromEVMTransactionsV2(txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
+func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
 	var out []eth.Data
 	for j, tx := range txs {
-		receipt := receipts[j]
-		// Exclude transactions if L1 transaction reverted.
-		if receipt.Status != types.ReceiptStatusSuccessful {
-			log.Warn("tx in inbox reverted", "index", j)
-			continue // reverted, ignore
+		if to := tx.To(); to != nil && *to == config.BatchInboxAddress {
+			receipt := receipts[j]
+			// Exclude transactions if L1 transaction reverted.
+			if receipt.Status != types.ReceiptStatusSuccessful {
+				log.Warn("tx in inbox reverted", "index", j)
+				continue // reverted, ignore
+			}
+			out = append(out, tx.Data())
 		}
-		out = append(out, tx.Data())
 	}
 	return out
 }
