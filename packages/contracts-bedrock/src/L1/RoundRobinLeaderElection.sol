@@ -16,14 +16,6 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
     uint256 public creation_block_number;
     uint8 constant HORIZON = 10; // Number of leader slots that can be checked in advance
 
-    function _uint256FromBytesLittleEndian(uint8[HORIZON] memory _input) private pure returns (uint256) {
-        uint256 r = 0;
-        for (uint256 i = 0; i < _input.length; i++) {
-            r += 2 ** (8 * i) * _input[i];
-        }
-        return r;
-    }
-
     constructor(uint256 _n) {
         owner = msg.sender;
         max_number_participants = _n;
@@ -55,12 +47,13 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
         }
     }
 
-    function nextBlocksAsLeader() external view returns (LeaderStatusFlags, uint256, uint256, uint8) {
+    function nextBlocksAsLeader() external view returns (LeaderStatusFlags, uint256, uint8[] memory) {
         if (!this.is_participant(msg.sender)) {
-            return (LeaderStatusFlags.Invalid, 0, 0, 0);
+            uint8[] memory emptyArray;
+            return (LeaderStatusFlags.Invalid, 0, emptyArray);
         } else {
             // Build the bitmap
-            uint8[HORIZON] memory leaderSlots;
+            uint8[] memory leaderSlots = new uint8[](HORIZON);
             for (uint256 i = 0; i < HORIZON; i++) {
                 if (this.isCurrentLeader(msg.sender, block.number + i)) {
                     leaderSlots[i] = 1;
@@ -69,8 +62,7 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
                 }
             }
 
-            uint256 bitmapAsInt = _uint256FromBytesLittleEndian(leaderSlots);
-            return (LeaderStatusFlags.Scheduled, block.number, bitmapAsInt, HORIZON);
+            return (LeaderStatusFlags.Scheduled, block.number, leaderSlots);
         }
     }
 }

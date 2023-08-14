@@ -27,7 +27,6 @@ interface ILeaderElectionBatchInbox {
     /// @return LeaderStatusFlags: tells whether it is possible to predict when the caller will be the leader in the
     /// future.
     /// @return uint256: current block number.
-    /// @return uin256: represents a bitmap array encoding leader positions.
-    /// @return uint8: integer N that specifies that only values in the slice [0,N-1] from the bitmap array is relevant.
-    function nextBlocksAsLeader() external view returns (LeaderStatusFlags, uint256, uint256, uint8);
+    /// @return uint8[]: represents a bitmap array encoding leader positions.
+    function nextBlocksAsLeader() external view returns (LeaderStatusFlags, uint256, uint8[] memory);
 }

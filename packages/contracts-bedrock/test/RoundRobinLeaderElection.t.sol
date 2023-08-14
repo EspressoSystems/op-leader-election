@@ -47,6 +47,16 @@ contract RoundRobinLeaderElectionTest is Test {
         assertTrue(leaderContract.isCurrentLeader(vm.addr(2), DEPLOYMENT_BLOCK_NUMBER + 1));
     }
 
+    // TODO is there a better way to compare these arrays?
+    function compareArrays(uint8[] memory _first_arr, uint8[10] memory _second_arr) private pure returns (bool) {
+        for (uint256 i = 0; i < 10; i++) {
+            if (_first_arr[i] != _second_arr[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     function test_nextBlocksAsLeader_success() external {
         // If the caller is not as participant return the tuple (LeaderStatus.Invalid, 0,0,0)
         address notALeader = vm.addr(1234);
@@ -54,32 +64,29 @@ contract RoundRobinLeaderElectionTest is Test {
 
         ILeaderElectionBatchInbox.LeaderStatusFlags flag;
         uint256 blockNumber;
-        uint256 bitmap;
-        uint8 horizon;
-        (flag, blockNumber, bitmap, horizon) = leaderContract.nextBlocksAsLeader();
+        uint8[] memory bitmap;
+
+        (flag, blockNumber, bitmap) = leaderContract.nextBlocksAsLeader();
         assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Invalid);
         assertEq(0, blockNumber);
-        assertEq(0, bitmap);
-        assertEq(0, horizon);
+        assertTrue(bitmap.length == 0);
 
         // Happy case for first leader
         address leader = vm.addr(1);
         vm.prank(leader);
 
-        (flag, blockNumber, bitmap, horizon) = leaderContract.nextBlocksAsLeader();
+        (flag, blockNumber, bitmap) = leaderContract.nextBlocksAsLeader();
         assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
         assertEq(100, blockNumber);
-        assertEq(1099511627777, bitmap); // Corresponds to bitmap [1,0,0,0,0,1,0,0,0,0]
-        assertEq(10, horizon);
+        assertTrue(compareArrays(bitmap, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0]));
 
         // Happy case for third leader
         leader = vm.addr(3);
         vm.prank(leader);
 
         assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
-        (flag, blockNumber, bitmap, horizon) = leaderContract.nextBlocksAsLeader();
+        (flag, blockNumber, bitmap) = leaderContract.nextBlocksAsLeader();
         assertEq(100, blockNumber);
-        assertEq(72057594037993472, bitmap); // Corresponds to bitmap [0,0,1,0,0,0,0,1,0,0]
-        assertEq(10, horizon);
+        assertTrue(compareArrays(bitmap, [0, 0, 1, 0, 0, 0, 0, 1, 0, 0]));
     }
 }
