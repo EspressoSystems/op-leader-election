@@ -21,18 +21,18 @@ contract RoundRobinLeaderElectionTest is Test {
         }
     }
 
-    function test_rrElection_ListParticipants() external {
+    function test_addParticipant_participantsAreAdded_success() external {
         for (uint256 i = 0; i < N_PARTICIPANTS; i++) {
             assertEq(vm.addr(i + 1), leaderContract.participants(i));
         }
     }
 
-    function test_rrElection_ListParticipantsIsFull() external {
+    function test_addParticipant_listIsFull_reverts() external {
         vm.expectRevert("RoundRobinLeaderElection: list of participants is full.");
         leaderContract.addParticipant(vm.addr(52));
     }
 
-    function test_rrElection_IsLeader() external {
+    function test_isLeader_success() external {
         assertEq(block.number, DEPLOYMENT_BLOCK_NUMBER);
         assertEq(leaderContract.creation_block_number(), DEPLOYMENT_BLOCK_NUMBER);
 
@@ -47,7 +47,7 @@ contract RoundRobinLeaderElectionTest is Test {
         assertTrue(leaderContract.isCurrentLeader(vm.addr(2), DEPLOYMENT_BLOCK_NUMBER + 1));
     }
 
-    function test_rrElection_nextBlocksAsLeader() external {
+    function test_nextBlocksAsLeader_success() external {
         // If the caller is not as participant return the tuple (LeaderStatus.Invalid, 0,0,0)
         address notALeader = vm.addr(1234);
         vm.prank(notALeader);
