@@ -1,6 +1,6 @@
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 
 import "../src/L1/RoundRobinLeaderElection.sol";
 import "../src/L1/LeaderElectionBatchInbox.sol";
@@ -28,7 +28,7 @@ contract RoundRobinLeaderElectionTest is Test {
     }
 
     function test_rrElection_ListParticipantsIsFull() external {
-        vm.expectRevert("List of participants is full.");
+        vm.expectRevert("RoundRobinLeaderElection: list of participants is full.");
         leaderContract.addParticipant(vm.addr(52));
     }
 
