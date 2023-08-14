@@ -9,7 +9,7 @@ import "./LeaderElectionBatchInbox.sol";
 contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
     address immutable owner;
     uint256 max_number_participants;
-    uint256 index_last_inserted_participant;
+    uint32 index_last_inserted_participant;
     mapping(uint256 => address) public participants;
     mapping(address => bool) public is_participant;
     // TODO No need to be public, just for testing purposes. Do this more cleanly
@@ -49,7 +49,8 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
             // if the block number is "too old" then no one is leader
             return false;
         } else {
-            uint256 index_leader = (_blockNumber - creation_block_number) % max_number_participants;
+            uint32 number_participants = index_last_inserted_participant;
+            uint256 index_leader = (_blockNumber - creation_block_number) % number_participants;
             return participants[index_leader] == _leaderId;
         }
     }
