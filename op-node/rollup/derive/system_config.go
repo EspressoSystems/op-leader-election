@@ -90,16 +90,16 @@ func ProcessSystemConfigUpdateLogEvent(destSysCfg *eth.SystemConfig, ev *types.L
 		if !solabi.EmptyReader(reader) {
 			return NewCriticalError(errors.New("too many bytes"))
 		}
-		if version > 1 {
+		switch version {
+		case 0:
+			destSysCfg.BatcherAddr = address
+		case 1:
+			// For version 2 the batcher address is no longer used. Set it to the zero address.
+			destSysCfg.BatcherAddr = common.Address{}
+		default:
 			return NewCriticalError(errors.New("unsupported batcher hash version"))
 		}
-		// Update the batcher address if the version byte is 0 (version 1)
-		// For version 2 the batcher address is no longer used.
-		if version == 0 {
-			destSysCfg.BatcherAddr = address
-		}
 		destSysCfg.BatcherHashVersion = version
-
 		return nil
 	case SystemConfigUpdateGasConfig:
 		if pointer, err := solabi.ReadUint64(reader); err != nil || pointer != 32 {
