@@ -291,5 +291,7 @@ type SystemConfig struct {
 	Scalar Bytes32 `json:"scalar"`
 	// GasLimit identifies the L2 block gas limit
 	GasLimit uint64 `json:"gasLimit"`
+	// BatcherHashVersion identifies the version of the batcher hash.
+	BatcherHashVersion uint8 `json:"batcherHashVersion"`
 	// More fields can be added for future SystemConfig versions.
 }

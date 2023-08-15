@@ -21,6 +21,7 @@ type DataIter interface {
 
 type L1TransactionFetcher interface {
 	InfoAndTxsByHash(ctx context.Context, hash common.Hash) (eth.BlockInfo, types.Transactions, error)
+	L1ReceiptsFetcher
 }
 
 // DataSourceFactory readers raw transactions from a given block & then filters for
@@ -37,8 +38,8 @@ func NewDataSourceFactory(log log.Logger, cfg *rollup.Config, fetcher L1Transact
 }
 
 // OpenData returns a DataIter. This struct implements the `Next` function.
-func (ds *DataSourceFactory) OpenData(ctx context.Context, id eth.BlockID, batcherAddr common.Address) DataIter {
-	return NewDataSource(ctx, ds.log, ds.cfg, ds.fetcher, id, batcherAddr)
+func (ds *DataSourceFactory) OpenData(ctx context.Context, id eth.BlockID, batcherAddr common.Address, batcherHashVersion uint8) DataIter {
+	return NewDataSource(ctx, ds.log, ds.cfg, ds.fetcher, id, batcherAddr, batcherHashVersion)
 }
 
 // DataSource is a fault tolerant approach to fetching data.
@@ -54,26 +55,47 @@ type DataSource struct {
 	fetcher L1TransactionFetcher
 	log     log.Logger
 
-	batcherAddr common.Address
+	batcherAddr        common.Address
+	batcherHashVersion uint8
 }
 
 // NewDataSource creates a new calldata source. It suppresses errors in fetching the L1 block if they occur.
 // If there is an error, it will attempt to fetch the result on the next call to `Next`.
-func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetcher L1TransactionFetcher, block eth.BlockID, batcherAddr common.Address) DataIter {
+func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetcher L1TransactionFetcher, block eth.BlockID, batcherAddr common.Address, batcherHashVersion uint8) DataIter {
 	_, txs, err := fetcher.InfoAndTxsByHash(ctx, block.Hash)
 	if err != nil {
 		return &DataSource{
-			open:        false,
-			id:          block,
-			cfg:         cfg,
-			fetcher:     fetcher,
-			log:         log,
-			batcherAddr: batcherAddr,
+			open:               false,
+			id:                 block,
+			cfg:                cfg,
+			fetcher:            fetcher,
+			log:                log,
+			batcherAddr:        batcherAddr,
+			batcherHashVersion: batcherHashVersion,
+		}
+	}
+	_, receipts, err := fetcher.FetchReceipts(ctx, block.Hash)
+	if err != nil {
+		return &DataSource{
+			open:               false,
+			id:                 block,
+			cfg:                cfg,
+			fetcher:            fetcher,
+			log:                log,
+			batcherAddr:        batcherAddr,
+			batcherHashVersion: batcherHashVersion,
 		}
 	} else {
-		return &DataSource{
-			open: true,
-			data: DataFromEVMTransactions(cfg, batcherAddr, txs, log.New("origin", block)),
+		if batcherHashVersion == 0 {
+			return &DataSource{
+				open: true,
+				data: DataFromEVMTransactions(cfg, batcherAddr, txs, log.New("origin", block)),
+			}
+		} else {
+			return &DataSource{
+				open: true,
+				data: DataFromEVMTransactionsV2(cfg, txs, receipts, log.New("origin", block)),
+			}
 		}
 	}
 }
@@ -84,8 +106,22 @@ func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetc
 func (ds *DataSource) Next(ctx context.Context) (eth.Data, error) {
 	if !ds.open {
 		if _, txs, err := ds.fetcher.InfoAndTxsByHash(ctx, ds.id.Hash); err == nil {
-			ds.open = true
-			ds.data = DataFromEVMTransactions(ds.cfg, ds.batcherAddr, txs, log.New("origin", ds.id))
+			if ds.batcherHashVersion == 0 {
+				ds.open = true
+				ds.data = DataFromEVMTransactions(ds.cfg, ds.batcherAddr, txs, log.New("origin", ds.id))
+			} else {
+				// TODO FetchReceipts also calls InfoAndTxsByHash, so the txs could
+				// also be returned from that call. This would save a round trip.
+				if _, receipts, err := ds.fetcher.FetchReceipts(ctx, ds.id.Hash); err == nil {
+					ds.open = true
+					ds.data = DataFromEVMTransactionsV2(ds.cfg, txs, receipts, log.New("origin", ds.id))
+					// TODO: handle errors in a single place, if possible.
+				} else if errors.Is(err, ethereum.NotFound) {
+					return nil, NewResetError(fmt.Errorf("failed to open calldata source: %w", err))
+				} else {
+					return nil, NewTemporaryError(fmt.Errorf("failed to open calldata source: %w", err))
+				}
+			}
 		} else if errors.Is(err, ethereum.NotFound) {
 			return nil, NewResetError(fmt.Errorf("failed to open calldata source: %w", err))
 		} else {
@@ -118,6 +154,26 @@ func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, 
 			if seqDataSubmitter != batcherAddr {
 				log.Warn("tx in inbox with unauthorized submitter", "index", j, "err", err)
 				continue // not an authorized batch submitter, ignore
+			}
+			out = append(out, tx.Data())
+		}
+	}
+	return out
+}
+
+// DataFromEVMTransactionsV2 filters all of the transactions and returns the
+// calldata from transactions that are sent to the batch inbox contract and did
+// not revert.
+// This will return an empty array if no valid transactions are found.
+func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
+	var out []eth.Data
+	for j, tx := range txs {
+		if to := tx.To(); to != nil && *to == config.BatchInboxAddress {
+			receipt := receipts[j]
+			// Exclude transactions if L1 transaction reverted.
+			if receipt.Status != types.ReceiptStatusSuccessful {
+				log.Warn("tx in inbox reverted", "index", j)
+				continue // reverted, ignore
 			}
 			out = append(out, tx.Data())
 		}

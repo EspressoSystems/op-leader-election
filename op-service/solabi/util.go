@@ -14,8 +14,9 @@ import (
 
 // These are empty padding values. They should be zero'd & not modified at all.
 var (
-	addressEmptyPadding [12]byte = [12]byte{}
-	uint64EmptyPadding  [24]byte = [24]byte{}
+	addressEmptyPadding     [12]byte = [12]byte{}
+	uint64EmptyPadding      [24]byte = [24]byte{}
+	batcherHashEmptyPadding [11]byte = [11]byte{}
 )
 
 func ReadSignature(r io.Reader) ([]byte, error) {
@@ -57,6 +58,29 @@ func ReadAddress(r io.Reader) (common.Address, error) {
 	}
 	_, err := io.ReadFull(r, a[:])
 	return a, err
+}
+
+func ReadBatcherHashWithVersion(r io.Reader) (uint8, common.Address, error) {
+	var version uint8
+	var readPadding [11]byte
+	var address common.Address
+
+	// Read the first byte as version
+	if err := binary.Read(r, binary.BigEndian, &version); err != nil {
+		return version, address, fmt.Errorf("expected number length to be 1 byte")
+	}
+
+	// Read the next 11 bytes as padding
+	if _, err := io.ReadFull(r, readPadding[:]); err != nil {
+		return version, address, err
+	} else if !bytes.Equal(readPadding[:], batcherHashEmptyPadding[:]) {
+		return version, address, fmt.Errorf("batcher hash gap was not empty: %x", readPadding[:])
+	}
+
+	// Read the remaining 20 bytes as address
+	_, err := io.ReadFull(r, address[:])
+
+	return version, address, err
 }
 
 // ReadUint64 reads a big endian uint64 from a 32 byte word
