@@ -48,6 +48,7 @@ contract DeployConfig is Script {
     uint256 public faultGameMaxDepth;
     uint256 public faultGameMaxDuration;
     uint256 public systemConfigStartBlock;
+    uint256 public leaderElectionMaxParticipants;
 
     constructor(string memory _path) {
         console.log("DeployConfig: reading file %s", _path);
@@ -89,6 +90,7 @@ contract DeployConfig is Script {
         eip1559Denominator = stdJson.readUint(_json, "$.eip1559Denominator");
         eip1559Elasticity = stdJson.readUint(_json, "$.eip1559Elasticity");
         systemConfigStartBlock = stdJson.readUint(_json, "$.systemConfigStartBlock");
+        leaderElectionMaxParticipants = stdJson.readUint(_json, "$.leaderElectionMaxParticipants");
 
         if (block.chainid == Chains.LocalDevnet || block.chainid == Chains.GethDevnet) {
             faultGameAbsolutePrestate = stdJson.readUint(_json, "$.faultGameAbsolutePrestate");
