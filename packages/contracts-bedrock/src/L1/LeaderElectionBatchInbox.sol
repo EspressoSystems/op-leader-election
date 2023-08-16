@@ -4,14 +4,14 @@ pragma solidity 0.8.19;
 /// @title ILeaderElectionBatchInbox
 /// @notice Interface for implementing a leader election scheme
 
-interface ILeaderElectionBatchInbox {
+abstract contract LeaderElectionBatchInbox {
     /// @notice tells if some participant is the leader w.r.t a L1 block number.
     /// @param _leaderId identifier of the leader. If the null address  0x0000000000000000000000000000000000000000 is
     ///         passed, the address of the caller is considered.
     /// @param _blockNumber block number for testing whether some participant is the leader. If blockNumber=0 then the
     ///         block number at the time of the call is considered.
     /// @return true if the leaderId  is the leader w.r.t. block blockNumber, false otherwise.
-    function isCurrentLeader(address _leaderId, uint256 _blockNumber) external view returns (bool);
+    function isCurrentLeader(address _leaderId, uint256 _blockNumber) external view virtual returns (bool);
 
     enum LeaderStatusFlags {
         Scheduled,
@@ -31,5 +31,6 @@ interface ILeaderElectionBatchInbox {
     )
         external
         view
+        virtual
         returns (LeaderStatusFlags, bool[] memory);
 }

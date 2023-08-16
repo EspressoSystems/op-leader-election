@@ -6,7 +6,7 @@ import "./LeaderElectionBatchInbox.sol";
 /// @title ILeaderElectionBatchInbox
 /// @notice Interface for implementing a leader election scheme
 
-contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
+contract RoundRobinLeaderElection is LeaderElectionBatchInbox {
     address immutable owner;
     uint256 max_number_participants;
     uint32 index_last_inserted_participant;
@@ -36,7 +36,7 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
         index_last_inserted_participant++;
     }
 
-    function isCurrentLeader(address _leaderId, uint256 _blockNumber) external view returns (bool) {
+    function isCurrentLeader(address _leaderId, uint256 _blockNumber) external view override returns (bool) {
         if (_blockNumber < creation_block_number) {
             // if the block number is "too old" then no one is leader
             return false;
@@ -53,6 +53,7 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
     )
         external
         view
+        override
         returns (LeaderStatusFlags, bool[] memory)
     {
         if (!this.is_participant(_leaderId)) {

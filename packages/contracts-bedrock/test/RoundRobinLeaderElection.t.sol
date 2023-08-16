@@ -51,12 +51,12 @@ contract RoundRobinLeaderElectionTest is Test {
         address notALeader = vm.addr(1234);
         uint256 blockNumber = 0;
 
-        ILeaderElectionBatchInbox.LeaderStatusFlags flag;
+        LeaderElectionBatchInbox.LeaderStatusFlags flag;
 
         bool[] memory bitmap;
 
         (flag, bitmap) = leaderContract.nextBlocksAsLeader(notALeader, blockNumber);
-        assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Invalid);
+        assertTrue(flag == LeaderElectionBatchInbox.LeaderStatusFlags.Invalid);
         assertTrue(bitmap.length == 0);
 
         // Happy case for first leader
@@ -64,7 +64,7 @@ contract RoundRobinLeaderElectionTest is Test {
         address leader = vm.addr(1);
 
         (flag, bitmap) = leaderContract.nextBlocksAsLeader(leader, blockNumber);
-        assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
+        assertTrue(flag == LeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
         assertEq(
             abi.encodePacked(bitmap),
             abi.encodePacked([true, false, false, false, false, true, false, false, false, false])
@@ -73,7 +73,7 @@ contract RoundRobinLeaderElectionTest is Test {
         // Happy case for third leader
         leader = vm.addr(3);
 
-        assertTrue(flag == ILeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
+        assertTrue(flag == LeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
         (flag, bitmap) = leaderContract.nextBlocksAsLeader(leader, blockNumber);
         assertEq(
             abi.encodePacked(bitmap),
