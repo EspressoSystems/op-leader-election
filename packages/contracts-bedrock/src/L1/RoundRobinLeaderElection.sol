@@ -47,22 +47,25 @@ contract RoundRobinLeaderElection is ILeaderElectionBatchInbox {
         }
     }
 
-    function nextBlocksAsLeader() external view returns (LeaderStatusFlags, uint256, uint8[] memory) {
-        if (!this.is_participant(msg.sender)) {
-            uint8[] memory emptyArray;
-            return (LeaderStatusFlags.Invalid, 0, emptyArray);
+    function nextBlocksAsLeader(
+        address _leaderId,
+        uint256 _blockNumber
+    )
+        external
+        view
+        returns (LeaderStatusFlags, bool[] memory)
+    {
+        if (!this.is_participant(_leaderId)) {
+            bool[] memory emptyArray;
+            return (LeaderStatusFlags.Invalid, emptyArray);
         } else {
             // Build the bitmap
-            uint8[] memory leaderSlots = new uint8[](HORIZON);
+            bool[] memory leaderSlots = new bool[](HORIZON);
             for (uint256 i = 0; i < HORIZON; i++) {
-                if (this.isCurrentLeader(msg.sender, block.number + i)) {
-                    leaderSlots[i] = 1;
-                } else {
-                    leaderSlots[i] = 0;
-                }
+                leaderSlots[i] = this.isCurrentLeader(_leaderId, _blockNumber + i);
             }
 
-            return (LeaderStatusFlags.Scheduled, block.number, leaderSlots);
+            return (LeaderStatusFlags.Scheduled, leaderSlots);
         }
     }
 }
