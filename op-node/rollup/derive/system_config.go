@@ -83,14 +83,23 @@ func ProcessSystemConfigUpdateLogEvent(destSysCfg *eth.SystemConfig, ev *types.L
 		if length, err := solabi.ReadUint64(reader); err != nil || length != 32 {
 			return NewCriticalError(errors.New("invalid length field"))
 		}
-		address, err := solabi.ReadAddress(reader)
+		version, address, err := solabi.ReadBatcherHashWithVersion(reader)
 		if err != nil {
-			return NewCriticalError(errors.New("could not read address"))
+			return NewCriticalError(errors.New("could not read batcher hash"))
 		}
 		if !solabi.EmptyReader(reader) {
 			return NewCriticalError(errors.New("too many bytes"))
 		}
-		destSysCfg.BatcherAddr = address
+		switch version {
+		case 0:
+			destSysCfg.BatcherAddr = address
+		case 1:
+			// For version 2 the batcher address is no longer used. Set it to the zero address.
+			destSysCfg.BatcherAddr = common.Address{}
+		default:
+			return NewCriticalError(errors.New("unsupported batcher hash version"))
+		}
+		destSysCfg.BatcherHashVersion = version
 		return nil
 	case SystemConfigUpdateGasConfig:
 		if pointer, err := solabi.ReadUint64(reader); err != nil || pointer != 32 {
