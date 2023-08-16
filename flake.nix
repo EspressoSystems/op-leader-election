@@ -10,7 +10,7 @@
 
   outputs = { self, flake-utils, nixpkgs, foundry, ... }:
     let
-      goVersion = 19; # Change this to update the whole stack
+      goVersion = 20; # Change this to update the whole stack
       overlays = [
         (final: prev: {
           go = prev."go_1_${toString goVersion}";
@@ -42,6 +42,7 @@
             golangci-lint
 
             # Node
+            nodejs
             pnpm
             yarn # `pnpm build` fails without this
 
