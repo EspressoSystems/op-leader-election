@@ -1,21 +1,31 @@
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 import { Test } from "forge-std/Test.sol";
 
-import "../src/L1/RoundRobinLeaderElection.sol";
-import "../src/L1/LeaderElectionBatchInbox.sol";
+import { Proxy } from "../src/universal/Proxy.sol";
+import { RoundRobinLeaderElection } from "../src/L1/RoundRobinLeaderElection.sol";
+import { LeaderElectionBatchInbox } from "../src/L1/LeaderElectionBatchInbox.sol";
 
 contract RoundRobinLeaderElectionTest is Test {
     RoundRobinLeaderElection leaderContract;
     uint256 public constant N_PARTICIPANTS = 5;
     uint256 DEPLOYMENT_BLOCK_NUMBER = 100;
+    address owner = address(0xbeef);
 
     function setUp() public {
         vm.roll(DEPLOYMENT_BLOCK_NUMBER);
-        leaderContract = new RoundRobinLeaderElection(N_PARTICIPANTS);
 
-        // Poblate the list of participants who are allowed to vote
+        Proxy proxy = new Proxy(msg.sender);
+        RoundRobinLeaderElection leaderImpl = new RoundRobinLeaderElection();
+
+        vm.prank(msg.sender);
+        proxy.upgradeToAndCall(address(leaderImpl), abi.encodeCall(leaderImpl.initialize, (owner, N_PARTICIPANTS)));
+
+        leaderContract = RoundRobinLeaderElection(address(proxy));
+
+        // Populate the list of participants who are allowed to vote
         for (uint256 i = 1; i <= N_PARTICIPANTS; i++) {
+            vm.prank(owner);
             address addr = vm.addr(i);
             leaderContract.addParticipant(addr);
         }
@@ -29,6 +39,7 @@ contract RoundRobinLeaderElectionTest is Test {
 
     function test_addParticipant_listIsFull_reverts() external {
         vm.expectRevert("RoundRobinLeaderElection: list of participants is full.");
+        vm.prank(owner);
         leaderContract.addParticipant(vm.addr(52));
     }
 
@@ -45,6 +56,18 @@ contract RoundRobinLeaderElectionTest is Test {
         // When the contract is deployed the leader is the first participant
         assertTrue(leaderContract.isCurrentLeader(vm.addr(1), DEPLOYMENT_BLOCK_NUMBER));
         assertTrue(leaderContract.isCurrentLeader(vm.addr(2), DEPLOYMENT_BLOCK_NUMBER + 1));
+    }
+
+    function test_submit_batch_success() external {
+        // Wrong leader, cannot submit
+        address notALeader = vm.addr(1234);
+        vm.prank(notALeader);
+        vm.expectRevert("RoundRobinLeaderElection: submit function must be called by the leader.");
+        leaderContract.submit("hi");
+
+        // Correct leader, does not revert
+        vm.prank(vm.addr(1));
+        leaderContract.submit("hi");
     }
 
     function test_nextBlocksAsLeader_success() external {
