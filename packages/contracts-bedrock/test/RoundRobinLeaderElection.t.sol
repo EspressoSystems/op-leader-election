@@ -19,10 +19,7 @@ contract RoundRobinLeaderElectionTest is Test {
         RoundRobinLeaderElection leaderImpl = new RoundRobinLeaderElection();
 
         vm.prank(msg.sender);
-        proxy.upgradeToAndCall(
-            address(leaderImpl),
-            abi.encodeCall(leaderImpl.initialize, (owner, N_PARTICIPANTS))
-        );
+        proxy.upgradeToAndCall(address(leaderImpl), abi.encodeCall(leaderImpl.initialize, (owner, N_PARTICIPANTS)));
 
         leaderContract = RoundRobinLeaderElection(address(proxy));
 

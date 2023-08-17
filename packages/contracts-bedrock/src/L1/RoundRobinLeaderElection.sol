@@ -20,10 +20,7 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
     // TODO No need to be public, just for testing purposes. Do this more cleanly
 
     constructor() Semver(0, 1, 0) {
-        initialize({
-            _owner: address(0xdEaD),
-            _max_number_participants: 10
-        });
+        initialize({ _owner: address(0xdEaD), _max_number_participants: 0 });
     }
 
     function initialize(address _owner, uint256 _max_number_participants) public reinitializer(2) {

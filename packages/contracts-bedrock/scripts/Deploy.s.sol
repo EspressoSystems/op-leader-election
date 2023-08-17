@@ -770,9 +770,8 @@ contract Deploy is Deployer {
             _proxy: payable(batchInboxProxy),
             _implementation: batchInbox,
             _data: abi.encodeCall(
-                RoundRobinLeaderElection.initialize,
-                (cfg.finalSystemOwner(), cfg.leaderElectionMaxParticipants())
-            )
+                RoundRobinLeaderElection.initialize, (cfg.finalSystemOwner(), cfg.leaderElectionMaxParticipants())
+                )
         });
 
         RoundRobinLeaderElection inbox = RoundRobinLeaderElection(payable(batchInboxProxy));
