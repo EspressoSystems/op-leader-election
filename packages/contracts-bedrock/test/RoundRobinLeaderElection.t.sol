@@ -58,6 +58,18 @@ contract RoundRobinLeaderElectionTest is Test {
         assertTrue(leaderContract.isCurrentLeader(vm.addr(2), DEPLOYMENT_BLOCK_NUMBER + 1));
     }
 
+    function test_submit_batch_success() external {
+        // Wrong leader, cannot submit
+        address notALeader = vm.addr(1234);
+        vm.prank(notALeader);
+        vm.expectRevert("RoundRobinLeaderElection: submit function must be called by the leader.");
+        leaderContract.submit("hi");
+
+        // Correct leader, does not revert
+        vm.prank(vm.addr(1));
+        leaderContract.submit("hi");
+    }
+
     function test_nextBlocksAsLeader_success() external {
         address notALeader = vm.addr(1234);
         uint256 blockNumber = 0;
