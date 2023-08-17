@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	opclient "github.com/ethereum-optimism/optimism/op-service/client"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
-	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -372,28 +372,43 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 		return err
 	}
 
-	l.sendTransaction(txdata, queue, receiptsCh)
+	l.sendTransaction(ctx, txdata, queue, receiptsCh)
 	return nil
 }
 
 // sendTransaction creates & submits a transaction to the batch inbox address with the given `data`.
 // It currently uses the underlying `txmgr` to handle transaction sending & price management.
 // This is a blocking method. It should not be called concurrently.
-func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) {
+func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) {
 	// Do the gas estimation offline. A value of 0 will cause the [txmgr] to estimate the gas limit.
 	data := txdata.Bytes()
-	intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
+	// intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
+	// if err != nil {
+	// 	l.log.Error("Failed to calculate intrinsic gas", "error", err)
+	// 	return
+	// }
+	estimatedGas, err := l.estimateGas(ctx, data)
 	if err != nil {
-		l.log.Error("Failed to calculate intrinsic gas", "error", err)
+		l.log.Error("Failed to get gas estimate", "error", err)
 		return
 	}
-
 	candidate := txmgr.TxCandidate{
 		To:       &l.Rollup.BatchInboxAddress,
 		TxData:   data,
-		GasLimit: intrinsicGas,
+		GasLimit: estimatedGas,
 	}
 	queue.Send(txdata, candidate, receiptsCh)
+}
+
+func (l *BatchSubmitter) estimateGas(ctx context.Context, data []byte) (uint64, error) {
+	tctx, cancel := context.WithTimeout(ctx, l.NetworkTimeout)
+	defer cancel()
+
+	return l.Config.L1Client.EstimateGas(tctx, ethereum.CallMsg{
+		To:   &l.Rollup.BatchInboxAddress,
+		Data: data,
+	})
+
 }
 
 func (l *BatchSubmitter) handleReceipt(r txmgr.TxReceipt[txData]) {
