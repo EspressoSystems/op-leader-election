@@ -30,6 +30,7 @@ import { BlockOracle } from "src/dispute/BlockOracle.sol";
 import { L1ERC721Bridge } from "src/L1/L1ERC721Bridge.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { Chains } from "./Chains.sol";
+import { RoundRobinLeaderElection } from "src/L1/RoundRobinLeaderElection.sol";
 
 import { IBigStepper } from "src/dispute/interfaces/IBigStepper.sol";
 import { IPreimageOracle } from "src/cannon/interfaces/IPreimageOracle.sol";
@@ -75,6 +76,7 @@ contract Deploy is Deployer {
         initializeL1CrossDomainMessenger();
         initializeL2OutputOracle();
         initializeOptimismPortal();
+        initializeRoundRobinLeaderElection();
 
         setFaultGameImplementation();
 
@@ -110,6 +112,7 @@ contract Deploy is Deployer {
         deployOptimismMintableERC20FactoryProxy();
         deployL1ERC721BridgeProxy();
         deployDisputeGameFactoryProxy();
+        deployRoundRobinLeaderElectionProxy();
 
         transferAddressManagerOwnership();
     }
@@ -127,6 +130,7 @@ contract Deploy is Deployer {
         deployBlockOracle();
         deployPreimageOracle();
         deployMips();
+        deployRoundRobinLeaderElection();
     }
 
     /// @notice Deploy the AddressManager
@@ -281,6 +285,22 @@ contract Deploy is Deployer {
 
         save("DisputeGameFactoryProxy", address(proxy));
         console.log("DisputeGameFactoryProxy deployed at %s", address(proxy));
+
+        addr_ = address(proxy);
+    }
+
+    /// @notice Deploy the RoundRobinLeaderElectionProxy
+    function deployRoundRobinLeaderElectionProxy() public onlyDevnet broadcast returns (address addr_) {
+        address proxyAdmin = mustGetAddress("ProxyAdmin");
+        Proxy proxy = new Proxy({
+            _admin: proxyAdmin
+        });
+
+        address admin = address(uint160(uint256(vm.load(address(proxy), OWNER_KEY))));
+        require(admin == proxyAdmin);
+
+        save("RoundRobinLeaderElectionProxy", address(proxy));
+        console.log("RoundRobinLeaderElectionProxy deployed at %s", address(proxy));
 
         addr_ = address(proxy);
     }
@@ -452,6 +472,18 @@ contract Deploy is Deployer {
         console.log("L1ERC721Bridge deployed at %s", address(bridge));
 
         addr_ = address(bridge);
+    }
+
+    /// @notice Deploy the RoundRobinLeaderElection
+    function deployRoundRobinLeaderElection() public broadcast returns (address addr_) {
+        RoundRobinLeaderElection election = new RoundRobinLeaderElection();
+
+        // TODO: Should we have need any asserts here?
+
+        save("RoundRobinLeaderElection", address(election));
+        console.log("RoundRobinLeaderElection deployed at %s", address(election));
+
+        addr_ = address(election);
     }
 
     /// @notice Transfer ownership of the address manager to the ProxyAdmin
@@ -726,6 +758,27 @@ contract Deploy is Deployer {
         require(portal.GUARDIAN() == cfg.portalGuardian());
         require(address(portal.SYSTEM_CONFIG()) == systemConfigProxy);
         require(portal.paused() == false);
+    }
+
+    /// @notice Initialize the RoundRobinLeaderElectionContract
+    function initializeRoundRobinLeaderElection() public broadcast {
+        ProxyAdmin proxyAdmin = ProxyAdmin(mustGetAddress("ProxyAdmin"));
+        address batchInboxProxy = mustGetAddress("RoundRobinLeaderElectionProxy");
+        address batchInbox = mustGetAddress("RoundRobinLeaderElection");
+
+        proxyAdmin.upgradeAndCall({
+            _proxy: payable(batchInboxProxy),
+            _implementation: batchInbox,
+            _data: abi.encodeCall(
+                RoundRobinLeaderElection.initialize, (cfg.finalSystemOwner(), cfg.leaderElectionMaxParticipants())
+                )
+        });
+
+        RoundRobinLeaderElection inbox = RoundRobinLeaderElection(payable(batchInboxProxy));
+        string memory version = inbox.version();
+        console.log("RoundRobinLeaderElection version: %s", version);
+
+        // TODO: check that the RoundRobinLeaderElection contract is initialized correctly
     }
 
     /// @notice Transfer ownership of the ProxyAdmin contract to the final system owner

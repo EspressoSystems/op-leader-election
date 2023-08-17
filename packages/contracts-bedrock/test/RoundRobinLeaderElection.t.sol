@@ -1,21 +1,31 @@
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
 import { Test } from "forge-std/Test.sol";
 
-import "../src/L1/RoundRobinLeaderElection.sol";
-import "../src/L1/LeaderElectionBatchInbox.sol";
+import { Proxy } from "../src/universal/Proxy.sol";
+import { RoundRobinLeaderElection } from "../src/L1/RoundRobinLeaderElection.sol";
+import { LeaderElectionBatchInbox } from "../src/L1/LeaderElectionBatchInbox.sol";
 
 contract RoundRobinLeaderElectionTest is Test {
     RoundRobinLeaderElection leaderContract;
     uint256 public constant N_PARTICIPANTS = 5;
     uint256 DEPLOYMENT_BLOCK_NUMBER = 100;
+    address owner = address(0xbeef);
 
     function setUp() public {
         vm.roll(DEPLOYMENT_BLOCK_NUMBER);
-        leaderContract = new RoundRobinLeaderElection(N_PARTICIPANTS);
 
-        // Poblate the list of participants who are allowed to vote
+        Proxy proxy = new Proxy(msg.sender);
+        RoundRobinLeaderElection leaderImpl = new RoundRobinLeaderElection();
+
+        vm.prank(msg.sender);
+        proxy.upgradeToAndCall(address(leaderImpl), abi.encodeCall(leaderImpl.initialize, (owner, N_PARTICIPANTS)));
+
+        leaderContract = RoundRobinLeaderElection(address(proxy));
+
+        // Populate the list of participants who are allowed to vote
         for (uint256 i = 1; i <= N_PARTICIPANTS; i++) {
+            vm.prank(owner);
             address addr = vm.addr(i);
             leaderContract.addParticipant(addr);
         }
@@ -29,6 +39,7 @@ contract RoundRobinLeaderElectionTest is Test {
 
     function test_addParticipant_listIsFull_reverts() external {
         vm.expectRevert("RoundRobinLeaderElection: list of participants is full.");
+        vm.prank(owner);
         leaderContract.addParticipant(vm.addr(52));
     }
 
