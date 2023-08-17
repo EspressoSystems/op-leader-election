@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/ethereum-optimism/optimism/op-node/client"
-	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/sources/caching"
 	"github.com/ethereum-optimism/optimism/op-service/backoff"
+	"github.com/ethereum-optimism/optimism/op-service/eth"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -131,9 +131,9 @@ func (s *SyncClient) eventLoop() {
 	s.log.Info("Starting sync client event loop")
 
 	backoffStrategy := &backoff.ExponentialStrategy{
-		Min:       1000,
-		Max:       20_000,
-		MaxJitter: 250,
+		Min:       1000 * time.Millisecond,
+		Max:       20_000 * time.Millisecond,
+		MaxJitter: 250 * time.Millisecond,
 	}
 
 	for {

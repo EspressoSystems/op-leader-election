@@ -10,5 +10,8 @@ ignores: [
   "eslint-config-prettier",
   "eslint-plugin-prettier",
   "chai",
-  "typedoc"
+  "ts-node",
+  "typedoc",
+  "ethereum-waffle",
+  "nyc"
 ]
