@@ -13,6 +13,13 @@ abstract contract LeaderElectionBatchInbox {
     /// @return true if the leaderId  is the leader w.r.t. block blockNumber, false otherwise.
     function isCurrentLeader(address _leaderId, uint256 _blockNumber) external view virtual returns (bool);
 
+    /// @notice Allows to submit a batch. This function checks that the caller is the leader for the current block.
+    /// @param _batch input ignored by the function for now.
+    function submit(bytes calldata _batch) public view {
+        bool isLeader = this.isCurrentLeader(msg.sender, block.number);
+        require(isLeader, "RoundRobinLeaderElection: submit function must be called by the leader.");
+    }
+
     enum LeaderStatusFlags {
         Scheduled,
         Unscheduled,
