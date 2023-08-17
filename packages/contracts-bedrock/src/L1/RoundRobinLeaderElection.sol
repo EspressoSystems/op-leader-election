@@ -1,31 +1,37 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.0;
 
-import "./LeaderElectionBatchInbox.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Semver } from "../universal/Semver.sol";
+import { LeaderElectionBatchInbox } from "./LeaderElectionBatchInbox.sol";
 
 /// @title ILeaderElectionBatchInbox
 /// @notice Interface for implementing a leader election scheme
 
-contract RoundRobinLeaderElection is LeaderElectionBatchInbox {
-    address immutable owner;
-    uint256 max_number_participants;
+contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeable, Semver {
+    // @notice The number of leader slots that can be checked in advance
+    uint8 public constant HORIZON = 10;
+
+    uint256 public creation_block_number;
+    uint256 public max_number_participants;
     uint32 index_last_inserted_participant;
     mapping(uint256 => address) public participants;
     mapping(address => bool) public is_participant;
     // TODO No need to be public, just for testing purposes. Do this more cleanly
-    uint256 public creation_block_number;
-    uint8 constant HORIZON = 10; // Number of leader slots that can be checked in advance
 
-    constructor(uint256 _n) {
-        owner = msg.sender;
-        max_number_participants = _n;
+    constructor() Semver(0, 1, 0) {
+        initialize({ _owner: address(0xdEaD), _max_number_participants: 0 });
+    }
+
+    function initialize(address _owner, uint256 _max_number_participants) public reinitializer(2) {
+        __Ownable_init();
+        transferOwnership(_owner);
+
+        max_number_participants = _max_number_participants;
         creation_block_number = block.number;
     }
 
-    function addParticipant(address _addr) public {
-        require(
-            msg.sender == owner, "RoundRobinLeaderElection: only the creator of this contract can call this function."
-        );
+    function addParticipant(address _addr) public onlyOwner {
         require(
             index_last_inserted_participant < max_number_participants,
             "RoundRobinLeaderElection: list of participants is full."
