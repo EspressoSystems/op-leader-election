@@ -365,10 +365,10 @@ contract Deploy is Deployer {
 
     /// @notice Deploy the OptimismMintableERC20Factory
     function deployOptimismMintableERC20Factory() public broadcast returns (address addr_) {
-        address l1StandardBridgeProxy = mustGetAddress("L1StandardBridgeProxy");
-        OptimismMintableERC20Factory factory = new OptimismMintableERC20Factory(l1StandardBridgeProxy);
+        OptimismMintableERC20Factory factory = new OptimismMintableERC20Factory();
 
-        require(factory.BRIDGE() == l1StandardBridgeProxy);
+        require(factory.BRIDGE() == address(0));
+        require(factory.bridge() == address(0));
 
         save("OptimismMintableERC20Factory", address(factory));
         console.log("OptimismMintableERC20Factory deployed at %s", address(factory));
@@ -415,7 +415,6 @@ contract Deploy is Deployer {
     /// @notice Deploy the SystemConfig
     function deploySystemConfig() public broadcast returns (address addr_) {
         SystemConfig config = new SystemConfig();
-        bytes32 batcherHash = bytes32(uint256(uint160(cfg.batchSenderAddress())));
 
         require(config.owner() == address(0xdEaD));
         require(config.overhead() == 0);
@@ -438,7 +437,7 @@ contract Deploy is Deployer {
         require(config.optimismPortal() == address(0));
         require(config.l1CrossDomainMessenger() == address(0));
         require(config.optimismMintableERC20Factory() == address(0));
-        require(config.startBlock() == 0);
+        require(config.startBlock() == type(uint256).max);
 
         save("SystemConfig", address(config));
         console.log("SystemConfig deployed at %s", address(config));
@@ -522,6 +521,7 @@ contract Deploy is Deployer {
         address systemConfig = mustGetAddress("SystemConfig");
 
         bytes32 batcherHash = bytes32(uint256(uint160(cfg.batchSenderAddress())));
+        uint256 startBlock = cfg.systemConfigStartBlock();
 
         proxyAdmin.upgradeAndCall({
             _proxy: payable(systemConfigProxy),
@@ -536,7 +536,7 @@ contract Deploy is Deployer {
                     uint64(cfg.l2GenesisBlockGasLimit()),
                     cfg.p2pSequencerAddress(),
                     Constants.DEFAULT_RESOURCE_CONFIG(),
-                    cfg.systemConfigStartBlock(),
+                    startBlock,
                     cfg.batchInboxAddress(),
                     cfg.batchInboxContractAddress(),
                     SystemConfig.Addresses({
@@ -575,7 +575,13 @@ contract Deploy is Deployer {
         require(config.l2OutputOracle() == mustGetAddress("L2OutputOracleProxy"));
         require(config.optimismPortal() == mustGetAddress("OptimismPortalProxy"));
         require(config.l1CrossDomainMessenger() == mustGetAddress("L1CrossDomainMessengerProxy"));
-        require(config.startBlock() == cfg.systemConfigStartBlock());
+
+        // A non zero start block is an override
+        if (startBlock != 0) {
+            require(config.startBlock() == startBlock);
+        } else {
+            require(config.startBlock() == block.number);
+        }
     }
 
     /// @notice Initialize the L1StandardBridge
@@ -640,9 +646,10 @@ contract Deploy is Deployer {
         address optimismMintableERC20Factory = mustGetAddress("OptimismMintableERC20Factory");
         address l1StandardBridgeProxy = mustGetAddress("L1StandardBridgeProxy");
 
-        proxyAdmin.upgrade({
+        proxyAdmin.upgradeAndCall({
             _proxy: payable(optimismMintableERC20FactoryProxy),
-            _implementation: optimismMintableERC20Factory
+            _implementation: optimismMintableERC20Factory,
+            _data: abi.encodeCall(OptimismMintableERC20Factory.initialize, (l1StandardBridgeProxy))
         });
 
         OptimismMintableERC20Factory factory = OptimismMintableERC20Factory(optimismMintableERC20FactoryProxy);
@@ -650,6 +657,7 @@ contract Deploy is Deployer {
         console.log("OptimismMintableERC20Factory version: %s", version);
 
         require(factory.BRIDGE() == l1StandardBridgeProxy);
+        require(factory.bridge() == l1StandardBridgeProxy);
     }
 
     /// @notice initializeL1CrossDomainMessenger

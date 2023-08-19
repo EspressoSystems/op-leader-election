@@ -38,5 +38,12 @@
   "gasPriceOracleOverhead": 2100,
   "gasPriceOracleScalar": 1000000,
   "eip1559Denominator": 50,
+<<<<<<< HEAD
   "eip1559Elasticity": 10
 }
+=======
+  "eip1559Elasticity": 10,
+
+  "leaderElectionMaxParticipants": 5
+}
+>>>>>>> op-leader-election

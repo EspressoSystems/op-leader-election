@@ -30,7 +30,11 @@ var (
 
 // LeaderElectionBatchInboxMetaData contains all meta data concerning the LeaderElectionBatchInbox contract.
 var LeaderElectionBatchInboxMetaData = &bind.MetaData{
+<<<<<<< HEAD
 	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"_batch\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+=======
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"_batch\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+>>>>>>> op-leader-election
 }
 
 // LeaderElectionBatchInboxABI is the input ABI used to generate the binding from.
@@ -242,6 +246,7 @@ func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxCallerSession) NextBloc
 	return _LeaderElectionBatchInbox.Contract.NextBlocksAsLeader(&_LeaderElectionBatchInbox.CallOpts, _leaderId, _blockNumber)
 }
 
+<<<<<<< HEAD
 // Submit is a paid mutator transaction binding the contract method 0xef7fa71b.
 //
 // Solidity: function submit(bytes _batch) returns()
@@ -261,4 +266,33 @@ func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) Submit(_batch 
 // Solidity: function submit(bytes _batch) returns()
 func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactorSession) Submit(_batch []byte) (*types.Transaction, error) {
 	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.TransactOpts, _batch)
+=======
+// Submit is a free data retrieval call binding the contract method 0xef7fa71b.
+//
+// Solidity: function submit(bytes _batch) view returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxCaller) Submit(opts *bind.CallOpts, _batch []byte) error {
+	var out []interface{}
+	err := _LeaderElectionBatchInbox.contract.Call(opts, &out, "submit", _batch)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+// Submit is a free data retrieval call binding the contract method 0xef7fa71b.
+//
+// Solidity: function submit(bytes _batch) view returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) Submit(_batch []byte) error {
+	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.CallOpts, _batch)
+}
+
+// Submit is a free data retrieval call binding the contract method 0xef7fa71b.
+//
+// Solidity: function submit(bytes _batch) view returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxCallerSession) Submit(_batch []byte) error {
+	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.CallOpts, _batch)
+>>>>>>> op-leader-election
 }

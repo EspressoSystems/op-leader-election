@@ -12,9 +12,9 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
-	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	opclient "github.com/ethereum-optimism/optimism/op-service/client"
+	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
