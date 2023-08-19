@@ -20,4 +20,5 @@ export interface OpNodeConfig {
   batch_inbox_address: string
   batch_sender_address: string
   deposit_contract_address: string
+  batch_inbox_contract_address: string
 }

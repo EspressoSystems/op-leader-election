@@ -30,7 +30,7 @@ var (
 
 // LeaderElectionBatchInboxMetaData contains all meta data concerning the LeaderElectionBatchInbox contract.
 var LeaderElectionBatchInboxMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"_batch\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // LeaderElectionBatchInboxABI is the input ABI used to generate the binding from.
@@ -240,4 +240,25 @@ func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) NextBlocksAsLe
 // Solidity: function nextBlocksAsLeader(address _leaderId, uint256 _blockNumber) view returns(uint8, bool[])
 func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxCallerSession) NextBlocksAsLeader(_leaderId common.Address, _blockNumber *big.Int) (uint8, []bool, error) {
 	return _LeaderElectionBatchInbox.Contract.NextBlocksAsLeader(&_LeaderElectionBatchInbox.CallOpts, _leaderId, _blockNumber)
+}
+
+// Submit is a paid mutator transaction binding the contract method 0xef7fa71b.
+//
+// Solidity: function submit(bytes _batch) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactor) Submit(opts *bind.TransactOpts, _batch []byte) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.contract.Transact(opts, "submit", _batch)
+}
+
+// Submit is a paid mutator transaction binding the contract method 0xef7fa71b.
+//
+// Solidity: function submit(bytes _batch) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) Submit(_batch []byte) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.TransactOpts, _batch)
+}
+
+// Submit is a paid mutator transaction binding the contract method 0xef7fa71b.
+//
+// Solidity: function submit(bytes _batch) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactorSession) Submit(_batch []byte) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.TransactOpts, _batch)
 }

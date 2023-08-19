@@ -46,6 +46,7 @@ func CollectAddresses(sd *SetupData, dp *DeployParams) (out []common.Address) {
 		sd.RollupCfg.BatchInboxAddress,
 		sd.RollupCfg.Genesis.SystemConfig.BatcherAddr,
 		sd.RollupCfg.DepositContractAddress,
+		sd.RollupCfg.BatchInboxContractAddr,
 	)
 	//  - precompiles
 	for i := 0; i <= 0xff; i++ {

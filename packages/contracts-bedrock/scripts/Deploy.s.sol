@@ -538,6 +538,7 @@ contract Deploy is Deployer {
                     Constants.DEFAULT_RESOURCE_CONFIG(),
                     cfg.systemConfigStartBlock(),
                     cfg.batchInboxAddress(),
+                    cfg.batchInboxContractAddress(),
                     SystemConfig.Addresses({
                         l1CrossDomainMessenger: mustGetAddress("L1CrossDomainMessengerProxy"),
                         l1ERC721Bridge: mustGetAddress("L1ERC721BridgeProxy"),

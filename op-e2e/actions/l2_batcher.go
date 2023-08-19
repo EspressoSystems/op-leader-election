@@ -178,6 +178,7 @@ func (s *L2Batcher) ActL2BatchSubmit(t Testing, txOpts ...func(tx *types.Dynamic
 	}
 	// Collect the output frame
 	data := new(bytes.Buffer)
+	// TODO: if BatchV2, insert 4 bytes of method id
 	data.WriteByte(derive.DerivationVersion0)
 	// subtract one, to account for the version byte
 	if _, err := s.l2ChannelOut.OutputFrame(data, s.l2BatcherCfg.MaxL1TxSize-1); err == io.EOF {
@@ -196,6 +197,7 @@ func (s *L2Batcher) ActL2BatchSubmit(t Testing, txOpts ...func(tx *types.Dynamic
 	require.NoError(t, err, "need l1 pending header for gas price estimation")
 	gasFeeCap := new(big.Int).Add(gasTipCap, new(big.Int).Mul(pendingHeader.BaseFee, big.NewInt(2)))
 
+	// TODO: BatchV2 check
 	rawTx := &types.DynamicFeeTx{
 		ChainID:   s.rollupCfg.L1ChainID,
 		Nonce:     nonce,
@@ -273,6 +275,7 @@ func (s *L2Batcher) ActL2BatchSubmitGarbage(t Testing, kind GarbageKind) {
 	default:
 		t.Fatalf("Unexpected garbage kind: %v", kind)
 	}
+	// TODO: if BatchV2, insert 4 bytes of method id, add removal to malformations
 
 	nonce, err := s.l1.PendingNonceAt(t.Ctx(), s.batcherAddr)
 	require.NoError(t, err, "need batcher nonce")
@@ -281,7 +284,7 @@ func (s *L2Batcher) ActL2BatchSubmitGarbage(t Testing, kind GarbageKind) {
 	pendingHeader, err := s.l1.HeaderByNumber(t.Ctx(), big.NewInt(-1))
 	require.NoError(t, err, "need l1 pending header for gas price estimation")
 	gasFeeCap := new(big.Int).Add(gasTipCap, new(big.Int).Mul(pendingHeader.BaseFee, big.NewInt(2)))
-
+	// TODO: BatchV2 check
 	rawTx := &types.DynamicFeeTx{
 		ChainID:   s.rollupCfg.L1ChainID,
 		Nonce:     nonce,

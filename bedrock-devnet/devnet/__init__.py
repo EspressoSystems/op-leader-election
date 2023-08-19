@@ -196,6 +196,8 @@ def devnet_deploy(paths):
     log.info(f'Using L2OutputOracle {l2_output_oracle}')
     batch_inbox_address = rollup_config['batch_inbox_address']
     log.info(f'Using batch inbox {batch_inbox_address}')
+    batch_inbox_contract_address = rollup_config['batch_inbox_contract_address']
+    log.info(f'Using batch inbox contract {batch_inbox_contract_address}')
 
     log.info('Bringing up everything else.')
     run_command(['docker-compose', 'up', '-d', 'op-node', 'op-proposer', 'op-batcher'], cwd=paths.ops_bedrock_dir, env={

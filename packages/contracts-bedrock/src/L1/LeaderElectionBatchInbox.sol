@@ -15,7 +15,7 @@ abstract contract LeaderElectionBatchInbox {
 
     /// @notice Allows to submit a batch. This function checks that the caller is the leader for the current block.
     /// @param _batch input ignored by the function for now.
-    function submit(bytes calldata _batch) public view {
+    function submit(bytes calldata _batch) public {
         bool isLeader = this.isCurrentLeader(msg.sender, block.number);
         require(isLeader, "RoundRobinLeaderElection: submit function must be called by the leader.");
     }

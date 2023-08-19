@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
+	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	opclient "github.com/ethereum-optimism/optimism/op-service/client"
@@ -75,6 +76,11 @@ func NewBatchSubmitterFromCLIConfig(cfg CLIConfig, l log.Logger, m metrics.Metri
 		return nil, err
 	}
 
+	biAbi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+	if err != nil {
+		return nil, err
+	}
+
 	batcherCfg := Config{
 		L1Client:               l1Client,
 		L2Client:               l2Client,
@@ -92,6 +98,7 @@ func NewBatchSubmitterFromCLIConfig(cfg CLIConfig, l log.Logger, m metrics.Metri
 			MaxFrameSize:       cfg.MaxL1TxSize - 1, // subtract 1 byte for version
 			CompressorConfig:   cfg.CompressorConfig.Config(),
 		},
+		BatchInboxAbi: biAbi,
 	}
 
 	// Validate the batcher config
@@ -114,6 +121,13 @@ func NewBatchSubmitter(ctx context.Context, cfg Config, l log.Logger, m metrics.
 	cfg.log.Info("creating batch submitter", "submitter_addr", cfg.TxManager.From(), "submitter_bal", balance)
 
 	cfg.metr = m
+
+	if cfg.BatchInboxAbi == nil {
+		biAbi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+		if err == nil && biAbi != nil {
+			cfg.BatchInboxAbi = biAbi
+		}
+	}
 
 	return &BatchSubmitter{
 		Config: cfg,
@@ -387,25 +401,41 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 	// 	l.log.Error("Failed to calculate intrinsic gas", "error", err)
 	// 	return
 	// }
-	estimatedGas, err := l.estimateGas(ctx, data)
+
+	// TODO: if BatchV2 check
+	candidate := txmgr.TxCandidate{
+		To:       &l.Rollup.BatchInboxContractAddr,
+		TxData:   data,
+		GasLimit: 0,
+	}
+	// TODO: if BatchV2 check
+	if l.Config.BatchInboxAbi != nil {
+		submit, exists := l.Config.BatchInboxAbi.Methods["submit"]
+		if exists {
+			candidate.MethodId = submit.ID
+		}
+	}
+	estimatedGas, err := l.estimateGas(ctx, candidate)
 	if err != nil {
 		l.log.Error("Failed to get gas estimate", "error", err)
 		return
 	}
-	candidate := txmgr.TxCandidate{
-		To:       &l.Rollup.BatchInboxAddress,
-		TxData:   data,
-		GasLimit: estimatedGas,
-	}
+	candidate.GasLimit = estimatedGas
 	queue.Send(txdata, candidate, receiptsCh)
 }
 
-func (l *BatchSubmitter) estimateGas(ctx context.Context, data []byte) (uint64, error) {
+func (l *BatchSubmitter) estimateGas(ctx context.Context, candidate txmgr.TxCandidate) (uint64, error) {
+	data := candidate.TxData
+
+	if len(candidate.MethodId) >= 4 {
+		data = append(candidate.MethodId[:4], data...)
+	}
+
 	tctx, cancel := context.WithTimeout(ctx, l.NetworkTimeout)
 	defer cancel()
 
 	return l.Config.L1Client.EstimateGas(tctx, ethereum.CallMsg{
-		To:   &l.Rollup.BatchInboxAddress,
+		To:   &l.Rollup.BatchInboxContractAddr,
 		Data: data,
 	})
 

@@ -48,6 +48,7 @@ func randConfig() *Config {
 		BatchInboxAddress:      randAddr(),
 		DepositContractAddress: randAddr(),
 		L1SystemConfigAddress:  randAddr(),
+		BatchInboxContractAddr: randAddr(),
 	}
 }
 
@@ -350,6 +351,11 @@ func TestConfig_Check(t *testing.T) {
 			name:        "NoDepositContractAddress",
 			modifier:    func(cfg *Config) { cfg.DepositContractAddress = common.Address{} },
 			expectedErr: ErrMissingDepositContractAddress,
+		},
+		{
+			name:        "NoBatchInboxContractAddress",
+			modifier:    func(cfg *Config) { cfg.BatchInboxContractAddr = common.Address{} },
+			expectedErr: ErrMissingBatchInboxContractAddr,
 		},
 		{
 			name:        "NoL1ChainId",
