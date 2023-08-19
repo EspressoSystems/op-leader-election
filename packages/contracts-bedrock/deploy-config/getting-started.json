@@ -12,7 +12,6 @@
   "p2pSequencerAddress": "SEQUENCER",
   "batchInboxAddress": "0xff00000000000000000000000000000000042069",
   "batchSenderAddress": "BATCHER",
-  "batchInboxContractAddress": "0xff00000000000000000000000000000000042069",
   "l2OutputOracleSubmissionInterval": 120,
   "l2OutputOracleStartingBlockNumber": 0,
   "l2OutputOracleStartingTimestamp": TIMESTAMP,
@@ -39,14 +38,8 @@
   "l2GenesisBlockBaseFeePerGas": "0x3b9aca00",
   "l2GenesisRegolithTimeOffset": "0x0",
   "eip1559Denominator": 50,
-<<<<<<< HEAD
-  "eip1559Elasticity": 10
-}
-=======
   "eip1559Elasticity": 10,
-
   "systemConfigStartBlock": 0,
-
-  "leaderElectionMaxParticipants": 5
+  "leaderElectionMaxParticipants": 5,
+  "batchInboxContractAddress": "0xff00000000000000000000000000000000042069"
 }
->>>>>>> op-leader-election

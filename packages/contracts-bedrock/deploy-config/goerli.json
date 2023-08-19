@@ -12,7 +12,6 @@
   "p2pSequencerAddress": "0x715b7219D986641DF9eFd9C7Ef01218D528e19ec",
   "batchInboxAddress": "0xff00000000000000000000000000000000000420",
   "batchSenderAddress": "0x7431310e026B69BFC676C0013E12A1A11411EEc9",
-  "batchInboxContractAddress": "0xff00000000000000000000000000000000000420",
   "l2OutputOracleSubmissionInterval": 120,
   "l2OutputOracleStartingBlockNumber": 4061224,
   "l2OutputOracleStartingTimestamp": 1673550516,
@@ -38,12 +37,8 @@
   "l2GenesisBlockGasLimit": "0x17D7840",
   "l2GenesisBlockBaseFeePerGas": "0x3b9aca00",
   "eip1559Denominator": 50,
-<<<<<<< HEAD
-  "eip1559Elasticity": 10
-}
-=======
   "eip1559Elasticity": 10,
   "systemConfigStartBlock": 8300214,
-  "leaderElectionMaxParticipants": 0
+  "leaderElectionMaxParticipants": 0,
+  "batchInboxContractAddress": "0xff00000000000000000000000000000000000420"
 }
->>>>>>> op-leader-election
