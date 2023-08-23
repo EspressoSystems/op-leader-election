@@ -5,6 +5,40 @@ pragma solidity ^0.8.0;
 /// @notice Interface for implementing a leader election scheme
 
 abstract contract LeaderElectionBatchInbox {
+    enum LeaderStatusFlags {
+        Scheduled,
+        Unscheduled,
+        Invalid
+    }
+
+    struct MetaData {
+        /// Frame metadata
+        bytes16 channelId;
+        uint16 frameNumber;
+        uint32 frameDataLength;
+        bool isLast;
+        /// The number of L2 blocks in this channel (including the current frame).
+        uint16 numL2Blocks;
+    }
+
+    /// @notice Allows to submit a batch. This function checks that the caller is the leader for the current block.
+    /// @notice The caller of this function is currently expected to append the frames as calldata after
+    ///         the metadata. This is done to avoid copying the frames in memory and allows the use of a custom
+    ///         encoding for the frames, without having to RLP-decode the frames.
+    ///
+    ///         Checking that the metadata matches the frames must be done in the derivation pipeline. If there is
+    ///         a mismatch between the metadata and the frames, the frames must be discarded.
+    ///
+    ///         Implementations of this contract interface can enforce behaviour based on the metadata submitted
+    ///         to this function.
+    ///
+    /// @param _metas metadata for the frames.
+    function submit(MetaData[] memory _metas) public view {
+        // TODO: pass metadata to isCurrentLeader and nextBlockAsLeader
+        bool isLeader = this.isCurrentLeader(msg.sender, block.number);
+        require(isLeader, "RoundRobinLeaderElection: submit function must be called by the leader.");
+    }
+
     /// @notice tells if some participant is the leader w.r.t a L1 block number.
     /// @param _leaderId identifier of the leader. If the null address  0x0000000000000000000000000000000000000000 is
     ///         passed, the address of the caller is considered.
@@ -12,19 +46,6 @@ abstract contract LeaderElectionBatchInbox {
     ///         block number at the time of the call is considered.
     /// @return true if the leaderId  is the leader w.r.t. block blockNumber, false otherwise.
     function isCurrentLeader(address _leaderId, uint256 _blockNumber) external view virtual returns (bool);
-
-    /// @notice Allows to submit a batch. This function checks that the caller is the leader for the current block.
-    /// @param _batch input ignored by the function for now.
-    function submit(bytes calldata _batch) public view {
-        bool isLeader = this.isCurrentLeader(msg.sender, block.number);
-        require(isLeader, "RoundRobinLeaderElection: submit function must be called by the leader.");
-    }
-
-    enum LeaderStatusFlags {
-        Scheduled,
-        Unscheduled,
-        Invalid
-    }
 
     /// @notice Computes for which blocks from the current one the caller will be the leader in the future.
     /// @param _leaderId identifier of the leader.
