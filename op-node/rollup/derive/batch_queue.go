@@ -245,8 +245,8 @@ batchLoop:
 	if nextTimestamp < nextEpoch.Time || firstOfEpoch {
 		bq.log.Info("Generating next batch", "epoch", epoch, "timestamp", nextTimestamp)
 		return &BatchData{
+			BatchV1Type,
 			BatchV2{
-				2,
 				common.Address{}, // to replace with new configured addr
 				BatchV1{
 					ParentHash:   l2SafeHead.Hash,

@@ -11,7 +11,6 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -254,9 +253,8 @@ func blockToBatch(block *types.Block) (*derive.BatchData, error) {
 	}
 
 	return &derive.BatchData{
+		Version: derive.BatchV1Type,
 		BatchV2: derive.BatchV2{
-			Version:   2,
-			PayToAddr: common.Address{},
 			BatchV1: derive.BatchV1{
 				ParentHash:   block.ParentHash(),
 				EpochNum:     rollup.Epoch(l1Info.Number),

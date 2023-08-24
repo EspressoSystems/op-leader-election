@@ -25,7 +25,7 @@ import (
 // Note: the type system is based on L1 typed transactions.
 //
 // BatchV2Type := 1
-// batchV2 := BatchV2Type ++ RLP([epoch, timestamp, fee_addr, transaction_list])
+// batchV2 := BatchV2Type ++ RLP([fee_addr, epoch, timestamp, transaction_list])
 
 // encodeBufferPool holds temporary encoder buffers for batch encoding
 var encodeBufferPool = sync.Pool{
@@ -47,12 +47,12 @@ type BatchV1 struct {
 }
 
 type BatchV2 struct {
-	Version   uint32
 	PayToAddr common.Address
 	BatchV1
 }
 
 type BatchData struct {
+	Version int
 	BatchV2
 	// batches may contain additional data with new upgrades
 }
@@ -84,8 +84,15 @@ func (b *BatchData) MarshalBinary() ([]byte, error) {
 }
 
 func (b *BatchData) encodeTyped(buf *bytes.Buffer) error {
-	buf.WriteByte(BatchV2Type)
-	return rlp.Encode(buf, &b.BatchV2)
+	if b.Version == BatchV1Type {
+		buf.WriteByte(BatchV1Type)
+		return rlp.Encode(buf, &b.BatchV1)
+	} else if b.Version == BatchV2Type {
+		buf.WriteByte(BatchV2Type)
+		return rlp.Encode(buf, &b.BatchV2)
+	} else {
+		return fmt.Errorf("unrecognized batch type: %d", b.Version)
+	}
 }
 
 // DecodeRLP implements rlp.Decoder
@@ -114,12 +121,11 @@ func (b *BatchData) decodeTyped(data []byte) error {
 	}
 	switch data[0] {
 	case BatchV1Type:
-		// DecodeRLP doesn't allow for passed in context;
-		// need to handle externally
-		b.BatchV2.Version = 1
+		b.Version = BatchV1Type
 		b.BatchV2.PayToAddr = common.Address{}
 		return rlp.DecodeBytes(data[1:], &b.BatchV1)
 	case BatchV2Type:
+		b.Version = BatchV2Type
 		return rlp.DecodeBytes(data[1:], &b.BatchV2)
 	default:
 		return fmt.Errorf("unrecognized batch type: %d", data[0])

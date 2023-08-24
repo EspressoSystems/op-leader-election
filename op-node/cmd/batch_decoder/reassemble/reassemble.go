@@ -21,7 +21,7 @@ type ChannelWithMetadata struct {
 	InvalidFrames  bool                `json:"invalid_frames"`
 	InvalidBatches bool                `json:"invalid_batches"`
 	Frames         []FrameWithMetadata `json:"frames"`
-	Batches        []derive.BatchV1    `json:"batches"`
+	Batches        []derive.BatchV2    `json:"batches"`
 }
 
 type FrameWithMetadata struct {
@@ -100,7 +100,7 @@ func processFrames(id derive.ChannelID, frames []FrameWithMetadata) ChannelWithM
 		}
 	}
 
-	var batches []derive.BatchV1
+	var batches []derive.BatchV2
 	invalidBatches := false
 	if ch.IsReady() {
 		br, err := derive.BatchReader(ch.Reader(), eth.L1BlockRef{})
@@ -110,7 +110,7 @@ func processFrames(id derive.ChannelID, frames []FrameWithMetadata) ChannelWithM
 					fmt.Printf("Error reading batch for channel %v. Err: %v\n", id.String(), err)
 					invalidBatches = true
 				} else {
-					batches = append(batches, batch.Batch.BatchV1)
+					batches = append(batches, batch.Batch.BatchV2)
 				}
 			}
 		} else {

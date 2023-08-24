@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -81,6 +82,11 @@ func NewBatchSubmitterFromCLIConfig(cfg CLIConfig, l log.Logger, m metrics.Metri
 		return nil, err
 	}
 
+	batchInboxVersion := derive.BatchV1Type
+	if cfg.StartWithVersion == 2 {
+		batchInboxVersion = derive.BatchV2Type
+	}
+
 	batcherCfg := Config{
 		L1Client:               l1Client,
 		L2Client:               l2Client,
@@ -88,6 +94,7 @@ func NewBatchSubmitterFromCLIConfig(cfg CLIConfig, l log.Logger, m metrics.Metri
 		PollInterval:           cfg.PollInterval,
 		MaxPendingTransactions: cfg.MaxPendingTransactions,
 		NetworkTimeout:         cfg.TxMgrConfig.NetworkTimeout,
+		BatchInboxVersion:      batchInboxVersion,
 		TxManager:              txManager,
 		Rollup:                 rcfg,
 		Channel: ChannelConfig{
@@ -280,7 +287,7 @@ func (l *BatchSubmitter) calculateL2BlockRangeToStore(ctx context.Context) (eth.
 
 	// Check if we should even attempt to load any blocks. TODO: May not need this check
 	if syncStatus.SafeL2.Number >= syncStatus.UnsafeL2.Number {
-		return eth.BlockID{}, eth.BlockID{}, errors.New("L2 safe head ahead of L2 unsafe head")
+		return eth.BlockID{}, eth.BlockID{}, fmt.Errorf("L2 safe head (%d) ahead of L2 unsafe head (%d)", syncStatus.SafeL2.Number, syncStatus.UnsafeL2.Number)
 	}
 
 	return l.lastStoredBlock, syncStatus.UnsafeL2.ID(), nil
@@ -396,31 +403,35 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) {
 	// Do the gas estimation offline. A value of 0 will cause the [txmgr] to estimate the gas limit.
 	data := txdata.Bytes()
-	// intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
-	// if err != nil {
-	// 	l.log.Error("Failed to calculate intrinsic gas", "error", err)
-	// 	return
-	// }
 
-	// TODO: if BatchV2 check
+	toAddr := &l.Rollup.BatchInboxAddress
+	if l.Config.BatchInboxVersion == derive.BatchV2Type {
+		toAddr = &l.Rollup.BatchInboxContractAddr
+	}
 	candidate := txmgr.TxCandidate{
-		To:       &l.Rollup.BatchInboxContractAddr,
+		To:       toAddr,
 		TxData:   data,
 		GasLimit: 0,
 	}
-	// TODO: if BatchV2 check
-	if l.Config.BatchInboxAbi != nil {
+	if l.Config.BatchInboxVersion == derive.BatchV2Type && l.Config.BatchInboxAbi != nil {
 		submit, exists := l.Config.BatchInboxAbi.Methods["submit"]
 		if exists {
 			candidate.MethodId = submit.ID
 		}
+		estimatedGas, err := l.estimateGas(ctx, candidate)
+		if err != nil {
+			l.log.Error("Failed to get gas estimate", "error", err)
+			return
+		}
+		candidate.GasLimit = estimatedGas
+	} else {
+		intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
+		if err != nil {
+			l.log.Error("Failed to calculate intrinsic gas", "error", err)
+			return
+		}
+		candidate.GasLimit = intrinsicGas
 	}
-	estimatedGas, err := l.estimateGas(ctx, candidate)
-	if err != nil {
-		l.log.Error("Failed to get gas estimate", "error", err)
-		return
-	}
-	candidate.GasLimit = estimatedGas
 	queue.Send(txdata, candidate, receiptsCh)
 }
 
