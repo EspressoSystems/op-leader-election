@@ -36,6 +36,5 @@
   "BlockOracle",
   "EAS",
   "SchemaRegistry",
-  "LeaderElectionBatchInbox",
-  "RoundRobinLeaderElection"
+  "LeaderElectionBatchInbox"
 ]
