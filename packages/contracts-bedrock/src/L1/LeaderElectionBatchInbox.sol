@@ -11,7 +11,7 @@ abstract contract LeaderElectionBatchInbox {
         Invalid
     }
 
-    struct MetaData {
+    struct Meta {
         /// Frame metadata
         bytes16 channelId;
         uint16 frameNumber;
@@ -22,9 +22,6 @@ abstract contract LeaderElectionBatchInbox {
     }
 
     /// @notice Allows to submit a batch. This function checks that the caller is the leader for the current block.
-    /// @notice The caller of this function is currently expected to append the frames as calldata after
-    ///         the metadata. This is done to avoid copying the frames in memory and allows the use of a custom
-    ///         encoding for the frames, without having to RLP-decode the frames.
     ///
     ///         Checking that the metadata matches the frames must be done in the derivation pipeline. If there is
     ///         a mismatch between the metadata and the frames, the frames must be discarded.
@@ -33,7 +30,8 @@ abstract contract LeaderElectionBatchInbox {
     ///         to this function.
     ///
     /// @param _metas metadata for the frames.
-    function submit(MetaData[] memory _metas) public view {
+    /// @param _frames frames to be submitted.
+    function submit(Meta[] memory _metas, bytes calldata _frames) external {
         // TODO: pass metadata to isCurrentLeader and nextBlockAsLeader
         bool isLeader = this.isCurrentLeader(msg.sender, block.number);
         require(isLeader, "RoundRobinLeaderElection: submit function must be called by the leader.");

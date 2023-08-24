@@ -6,6 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
 // Frames cannot be larger than 1 MB.
@@ -130,6 +133,29 @@ func ParseFrames(data []byte) ([]Frame, error) {
 	if len(data) == 0 {
 		return nil, errors.New("data array must not be empty")
 	}
+	// If the calldata starts with the function signature of the submit method
+	// then it is a v2 frame.
+	// TODO: don't parse the ABI every time
+	abi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+	if err != nil || abi == nil {
+		return nil, fmt.Errorf("could not get abi: %w", err)
+	}
+	submit, exists := abi.Methods["submit"]
+	if !exists {
+		return nil, errors.New("could not find submit method in bindings")
+	}
+	// Check if the signature matches the submit function
+	// TODO: v2 code currently untested
+	isV2 := len(data) >= 4 && bytes.Equal(data[:4], submit.ID)
+	var metas []bindings.LeaderElectionBatchInboxMeta
+	if isV2 {
+		metas, data, err = ParseFramesV2(data, submit)
+		if err != nil {
+			return nil, fmt.Errorf("parsing v2 frames: %w", err)
+		}
+	}
+
+	// Otherwise it is a v0 frame.
 	if data[0] != DerivationVersion0 {
 		return nil, fmt.Errorf("invalid derivation format byte: got %d", data[0])
 	}
@@ -148,5 +174,48 @@ func ParseFrames(data []byte) ([]Frame, error) {
 	if len(frames) == 0 {
 		return nil, errors.New("was not able to find any frames")
 	}
+
+	// Check that the metadata matches the frames
+	if isV2 {
+		if len(frames) != len(metas) {
+			return nil, fmt.Errorf("number of frames and metas do not match: %d != %d", len(frames), len(metas))
+		}
+		for i := range frames {
+			frame := frames[i]
+			meta := metas[i]
+			if frame.ID != meta.ChannelId {
+				return nil, fmt.Errorf("frame %d channel id does not match meta: %s != %s", i, frame.ID, meta.ChannelId)
+			}
+			if frame.FrameNumber != meta.FrameNumber {
+				return nil, fmt.Errorf("frame %d frame number does not match meta: %d != %d", i, frame.FrameNumber, meta.FrameNumber)
+			}
+			if len(frame.Data) != int(meta.FrameDataLength) {
+				return nil, fmt.Errorf("frame %d frame data length does not match meta: %d != %d", i, len(frame.Data), meta.FrameDataLength)
+			}
+			if frame.IsLast != meta.IsLast {
+				return nil, fmt.Errorf("frame %d isLast does not match meta: %t != %t", i, frame.IsLast, meta.IsLast)
+			}
+		}
+	}
+
 	return frames, nil
+}
+
+// TODO currently untested
+func ParseFramesV2(data []byte, submit abi.Method) ([]bindings.LeaderElectionBatchInboxMeta, []byte, error) {
+
+	decoded, err := submit.Inputs.Unpack(data)
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not decode data: %w", err)
+	}
+	metas, ok := decoded[0].([]bindings.LeaderElectionBatchInboxMeta)
+	if !ok {
+		return nil, nil, fmt.Errorf("could not decode metas")
+	}
+	frames, ok := decoded[1].([]byte)
+	if !ok {
+		return nil, nil, fmt.Errorf("could not decode frames")
+	}
+
+	return metas, frames, nil
 }
