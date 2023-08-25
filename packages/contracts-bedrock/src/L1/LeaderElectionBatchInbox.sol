@@ -32,7 +32,7 @@ abstract contract LeaderElectionBatchInbox {
     /// @param _metas metadata for the frames.
     /// @param _frames frames to be submitted.
     function submit(Meta[] memory _metas, bytes calldata _frames) external {
-        // TODO: pass metadata to isCurrentLeader and nextBlockAsLeader
+        // TODO: pass metadata to isCurrentLeader
         bool isLeader = this.isCurrentLeader(msg.sender, block.number);
         require(isLeader, "RoundRobinLeaderElection: submit function must be called by the leader.");
     }

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-node/testutils"
 	"github.com/stretchr/testify/require"
 )
@@ -193,6 +194,38 @@ func TestParseFramesTruncated(t *testing.T) {
 	require.Error(t, err)
 	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
 	require.Empty(t, frames0)
+}
+
+func TestParseFramesFromContract(t *testing.T) {
+	rng := rand.New(rand.NewSource(0))
+
+	// Create a frame and encode it as a tx payload
+	frame := randomFrame(rng, frameWithDataLen(1024))
+	frames := []Frame{*frame}
+	framesBytes, err := txMarshalFrames(frames)
+	require.NoError(t, err)
+
+	// Create the metadata
+	meta := bindings.LeaderElectionBatchInboxMeta{
+		ChannelId:       frame.ID,
+		FrameNumber:     frame.FrameNumber,
+		FrameDataLength: uint32(len(frame.Data)),
+		IsLast:          frame.IsLast,
+		NumL2Blocks:     1, // TODO: This is arbitrary, currently not used anywhere.
+	}
+	metas := []bindings.LeaderElectionBatchInboxMeta{meta}
+
+	abi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+	require.NoError(t, err)
+	require.NotNil(t, abi)
+
+	calldata, err := abi.Pack("submit", metas, framesBytes)
+	require.NoError(t, err)
+
+	framesDecoded, err := ParseFrames(calldata)
+
+	require.NoError(t, err)
+	require.Equal(t, frames, framesDecoded)
 }
 
 // txMarshalFrames creates the tx payload for the given frames, i.e., it first
