@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -15,6 +16,20 @@ import (
 // Data transactions that carry frames are generally not larger than 128 KB due to L1 network conditions,
 // but we leave space to grow larger anyway (gas limit allows for more data).
 const MaxFrameLen = 1_000_000
+
+var SubmitAbi = loadSubmitAbi()
+
+func loadSubmitAbi() abi.Method {
+	abi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+	if err != nil || abi == nil {
+		log.Fatalf("could not get LeaderElectionBatchInbox contract abi")
+	}
+	submit, exists := abi.Methods["submit"]
+	if !exists {
+		log.Fatalf("no submit method in abi")
+	}
+	return submit
+}
 
 // Data Format
 //
@@ -133,29 +148,21 @@ func ParseFrames(data []byte) ([]Frame, error) {
 	if len(data) == 0 {
 		return nil, errors.New("data array must not be empty")
 	}
-	// If the calldata starts with the function signature of the submit method
-	// then it is a v2 frame.
-	// TODO: don't parse the ABI every time
-	abi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
-	if err != nil || abi == nil {
-		return nil, fmt.Errorf("could not get abi: %w", err)
-	}
-	submit, exists := abi.Methods["submit"]
-	if !exists {
-		return nil, errors.New("could not find submit method in bindings")
-	}
-	// Check if the signature matches the submit function
-	// TODO: v2 code currently untested
-	isV2 := len(data) >= 4 && bytes.Equal(data[:4], submit.ID)
+	// Check if the calldata signature matches the submit function to determine
+	// if this was a batch that was sent to the inbox smart contract. If that's
+	// the case, we need to decode the arguments and, later check if the meta
+	// data matches the decoded frame. Otherwise, treat it as a frame that was
+	// sent to the (non-contract) batch inbox address.
 	var metas []bindings.LeaderElectionBatchInboxMeta
-	if isV2 {
-		metas, data, err = ParseFramesV2(data, submit)
+	isFromContract := len(data) >= 4 && bytes.Equal(data[:4], SubmitAbi.ID)
+	if isFromContract {
+		var err error
+		metas, data, err = ParseFramesV2(data)
 		if err != nil {
 			return nil, fmt.Errorf("parsing v2 frames: %w", err)
 		}
 	}
 
-	// Otherwise it is a v0 frame.
 	if data[0] != DerivationVersion0 {
 		return nil, fmt.Errorf("invalid derivation format byte: got %d", data[0])
 	}
@@ -176,7 +183,7 @@ func ParseFrames(data []byte) ([]Frame, error) {
 	}
 
 	// Check that the metadata matches the frames
-	if isV2 {
+	if isFromContract {
 		if len(frames) != len(metas) {
 			return nil, fmt.Errorf("number of frames and metas do not match: %d != %d", len(frames), len(metas))
 		}
@@ -202,9 +209,9 @@ func ParseFrames(data []byte) ([]Frame, error) {
 }
 
 // TODO currently untested
-func ParseFramesV2(data []byte, submit abi.Method) ([]bindings.LeaderElectionBatchInboxMeta, []byte, error) {
+func ParseFramesV2(data []byte) ([]bindings.LeaderElectionBatchInboxMeta, []byte, error) {
 
-	decoded, err := submit.Inputs.Unpack(data)
+	decoded, err := SubmitAbi.Inputs.Unpack(data)
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not decode data: %w", err)
 	}
