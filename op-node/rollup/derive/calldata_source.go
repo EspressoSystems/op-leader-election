@@ -1,6 +1,7 @@
 package derive
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -162,20 +163,27 @@ func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, 
 }
 
 // DataFromEVMTransactionsV2 filters all of the transactions and returns the
-// calldata from transactions that are sent to the batch inbox contract and did
-// not revert.
+// calldata from transactions that are sent to the submit function of the batch
+// inbox contract and did not revert.
 // This will return an empty array if no valid transactions are found.
 func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
 	var out []eth.Data
 	for j, tx := range txs {
 		if to := tx.To(); to != nil && *to == config.BatchInboxAddress {
 			receipt := receipts[j]
+			data := tx.Data()
+			// Exclude transactions if L1 transaction did call submit function.
+			if len(data) < 4 || !bytes.Equal(data[:4], SubmitAbi.ID) {
+				log.Warn("tx sent to inbox contract did not call submit function", "index", j)
+				continue // not calling submit function, ignore
+			}
+
 			// Exclude transactions if L1 transaction reverted.
 			if receipt.Status != types.ReceiptStatusSuccessful {
-				log.Warn("tx in inbox reverted", "index", j)
+				log.Warn("tx sent to inbox contract reverted", "index", j)
 				continue // reverted, ignore
 			}
-			out = append(out, tx.Data())
+			out = append(out, data)
 		}
 	}
 	return out
