@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
 	"gorm.io/gorm"
 
@@ -16,24 +17,24 @@ import (
  */
 
 type BridgeMessage struct {
-	MessageHash common.Hash `gorm:"primaryKey;serializer:json"`
-	Nonce       U256
+	MessageHash common.Hash `gorm:"primaryKey;serializer:bytes"`
+	Nonce       *big.Int    `gorm:"serializer:u256"`
 
 	SentMessageEventGUID    uuid.UUID
 	RelayedMessageEventGUID *uuid.UUID
 
 	Tx       Transaction `gorm:"embedded"`
-	GasLimit U256
+	GasLimit *big.Int    `gorm:"serializer:u256"`
 }
 
 type L1BridgeMessage struct {
 	BridgeMessage         `gorm:"embedded"`
-	TransactionSourceHash common.Hash `gorm:"serializer:json"`
+	TransactionSourceHash common.Hash `gorm:"serializer:bytes"`
 }
 
 type L2BridgeMessage struct {
 	BridgeMessage             `gorm:"embedded"`
-	TransactionWithdrawalHash common.Hash `gorm:"serializer:json"`
+	TransactionWithdrawalHash common.Hash `gorm:"serializer:bytes"`
 }
 
 type BridgeMessagesView interface {
@@ -47,10 +48,10 @@ type BridgeMessagesView interface {
 type BridgeMessagesDB interface {
 	BridgeMessagesView
 
-	StoreL1BridgeMessages([]*L1BridgeMessage) error
+	StoreL1BridgeMessages([]L1BridgeMessage) error
 	MarkRelayedL1BridgeMessage(common.Hash, uuid.UUID) error
 
-	StoreL2BridgeMessages([]*L2BridgeMessage) error
+	StoreL2BridgeMessages([]L2BridgeMessage) error
 	MarkRelayedL2BridgeMessage(common.Hash, uuid.UUID) error
 }
 
@@ -70,7 +71,7 @@ func newBridgeMessagesDB(db *gorm.DB) BridgeMessagesDB {
  * Arbitrary Messages Sent from L1
  */
 
-func (db bridgeMessagesDB) StoreL1BridgeMessages(messages []*L1BridgeMessage) error {
+func (db bridgeMessagesDB) StoreL1BridgeMessages(messages []L1BridgeMessage) error {
 	result := db.gorm.Create(&messages)
 	return result.Error
 }
@@ -109,7 +110,7 @@ func (db bridgeMessagesDB) MarkRelayedL1BridgeMessage(messageHash common.Hash, r
  * Arbitrary Messages Sent from L2
  */
 
-func (db bridgeMessagesDB) StoreL2BridgeMessages(messages []*L2BridgeMessage) error {
+func (db bridgeMessagesDB) StoreL2BridgeMessages(messages []L2BridgeMessage) error {
 	result := db.gorm.Create(&messages)
 	return result.Error
 }
