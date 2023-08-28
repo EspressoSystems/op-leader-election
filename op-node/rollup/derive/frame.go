@@ -155,7 +155,6 @@ func ParseFrames(data []byte) ([]Frame, error) {
 	// sent to the (non-contract) batch inbox address.
 	var metas []bindings.LeaderElectionBatchInboxMeta
 	isFromContract := len(data) >= 4 && bytes.Equal(data[:4], SubmitAbi.ID)
-	fmt.Printf("isFromContract: %v\n", isFromContract)
 	if isFromContract {
 		var err error
 		metas, data, err = ParseFramesV2(data[4:])

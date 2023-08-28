@@ -43,7 +43,7 @@ func TestE2EBridgeTransfersStandardBridgeETHDeposit(t *testing.T) {
 
 	// wait for processor catchup
 	require.NoError(t, wait.For(context.Background(), 500*time.Millisecond, func() (bool, error) {
-		l1Header := testSuite.Indexer.L1Processor.LatestProcessedHeader()
+		l1Header := testSuite.Indexer.BridgeProcessor.LatestL1Header
 		return l1Header != nil && l1Header.Number.Uint64() >= depositReceipt.BlockNumber.Uint64(), nil
 	}))
 
@@ -63,7 +63,7 @@ func TestE2EBridgeTransfersStandardBridgeETHDeposit(t *testing.T) {
 	require.Equal(t, depositInfo.DepositTx.SourceHash, deposit.TransactionSourceHash)
 	require.Equal(t, predeploys.LegacyERC20ETHAddr, deposit.TokenPair.LocalTokenAddress)
 	require.Equal(t, predeploys.LegacyERC20ETHAddr, deposit.TokenPair.RemoteTokenAddress)
-	require.Equal(t, big.NewInt(params.Ether), deposit.Tx.Amount.Int)
+	require.Equal(t, uint64(params.Ether), deposit.Tx.Amount.Uint64())
 	require.Equal(t, aliceAddr, deposit.Tx.FromAddress)
 	require.Equal(t, aliceAddr, deposit.Tx.ToAddress)
 	require.Equal(t, byte(1), deposit.Tx.Data[0])
@@ -73,11 +73,11 @@ func TestE2EBridgeTransfersStandardBridgeETHDeposit(t *testing.T) {
 	require.NotNil(t, deposit.CrossDomainMessageHash)
 
 	// (2) Test Deposit Finalization via CrossDomainMessenger relayed message
-	depositReceipt, err = wait.ForReceiptOK(context.Background(), testSuite.L2Client, types.NewTx(depositInfo.DepositTx).Hash())
+	l2DepositReceipt, err := wait.ForReceiptOK(context.Background(), testSuite.L2Client, types.NewTx(depositInfo.DepositTx).Hash())
 	require.NoError(t, err)
 	require.NoError(t, wait.For(context.Background(), 500*time.Millisecond, func() (bool, error) {
-		l2Header := testSuite.Indexer.L2Processor.LatestProcessedHeader()
-		return l2Header != nil && l2Header.Number.Uint64() >= depositReceipt.BlockNumber.Uint64(), nil
+		l2Header := testSuite.Indexer.BridgeProcessor.LatestL2Header
+		return l2Header != nil && l2Header.Number.Uint64() >= l2DepositReceipt.BlockNumber.Uint64(), nil
 	}))
 
 	crossDomainBridgeMessage, err := testSuite.DB.BridgeMessages.L1BridgeMessage(*deposit.CrossDomainMessageHash)
@@ -221,19 +221,21 @@ func TestE2EBridgeTransfersOptimismPortalETHReceive(t *testing.T) {
 
 	// wait for processor catchup
 	require.NoError(t, wait.For(context.Background(), 500*time.Millisecond, func() (bool, error) {
-		l1Header := testSuite.Indexer.L1Processor.LatestProcessedHeader()
+		l1Header := testSuite.Indexer.BridgeProcessor.LatestL1Header
 		return l1Header != nil && l1Header.Number.Uint64() >= portalDepositReceipt.BlockNumber.Uint64(), nil
 	}))
 
 	aliceDeposits, err := testSuite.DB.BridgeTransfers.L1BridgeDepositsByAddress(aliceAddr, "", 0)
 	require.NoError(t, err)
+	require.NotNil(t, aliceDeposits)
+	require.Len(t, aliceDeposits.Deposits, 1)
 	require.Equal(t, portalDepositTx.Hash(), aliceDeposits.Deposits[0].L1TransactionHash)
 
 	deposit := aliceDeposits.Deposits[0].L1BridgeDeposit
 	require.Equal(t, depositInfo.DepositTx.SourceHash, deposit.TransactionSourceHash)
 	require.Equal(t, predeploys.LegacyERC20ETHAddr, deposit.TokenPair.LocalTokenAddress)
 	require.Equal(t, predeploys.LegacyERC20ETHAddr, deposit.TokenPair.RemoteTokenAddress)
-	require.Equal(t, big.NewInt(params.Ether), deposit.Tx.Amount.Int)
+	require.Equal(t, uint64(params.Ether), deposit.Tx.Amount.Uint64())
 	require.Equal(t, aliceAddr, deposit.Tx.FromAddress)
 	require.Equal(t, aliceAddr, deposit.Tx.ToAddress)
 	require.Len(t, deposit.Tx.Data, 0)
@@ -242,11 +244,11 @@ func TestE2EBridgeTransfersOptimismPortalETHReceive(t *testing.T) {
 	require.Nil(t, deposit.CrossDomainMessageHash)
 
 	// (2) Test Deposit Finalization
-	depositReceipt, err := wait.ForReceiptOK(context.Background(), testSuite.L2Client, types.NewTx(depositInfo.DepositTx).Hash())
+	l2DepositReceipt, err := wait.ForReceiptOK(context.Background(), testSuite.L2Client, types.NewTx(depositInfo.DepositTx).Hash())
 	require.NoError(t, err)
 	require.NoError(t, wait.For(context.Background(), 500*time.Millisecond, func() (bool, error) {
-		l2Header := testSuite.Indexer.L2Processor.LatestProcessedHeader()
-		return l2Header != nil && l2Header.Number.Uint64() >= depositReceipt.BlockNumber.Uint64(), nil
+		l2Header := testSuite.Indexer.BridgeProcessor.LatestL2Header
+		return l2Header != nil && l2Header.Number.Uint64() >= l2DepositReceipt.BlockNumber.Uint64(), nil
 	}))
 
 	// Still nil as the withdrawal did not occur through the standard bridge
@@ -286,7 +288,7 @@ func TestE2EBridgeTransfersStandardBridgeETHWithdrawal(t *testing.T) {
 
 	// wait for processor catchup
 	require.NoError(t, wait.For(context.Background(), 500*time.Millisecond, func() (bool, error) {
-		l2Header := testSuite.Indexer.L2Processor.LatestProcessedHeader()
+		l2Header := testSuite.Indexer.BridgeProcessor.LatestL2Header
 		return l2Header != nil && l2Header.Number.Uint64() >= withdrawReceipt.BlockNumber.Uint64(), nil
 	}))
 
@@ -304,7 +306,7 @@ func TestE2EBridgeTransfersStandardBridgeETHWithdrawal(t *testing.T) {
 	require.Equal(t, withdrawalHash, withdrawal.TransactionWithdrawalHash)
 	require.Equal(t, predeploys.LegacyERC20ETHAddr, withdrawal.TokenPair.LocalTokenAddress)
 	require.Equal(t, predeploys.LegacyERC20ETHAddr, withdrawal.TokenPair.RemoteTokenAddress)
-	require.Equal(t, big.NewInt(params.Ether), withdrawal.Tx.Amount.Int)
+	require.Equal(t, uint64(params.Ether), withdrawal.Tx.Amount.Uint64())
 	require.Equal(t, aliceAddr, withdrawal.Tx.FromAddress)
 	require.Equal(t, aliceAddr, withdrawal.Tx.ToAddress)
 	require.Equal(t, byte(1), withdrawal.Tx.Data[0])
@@ -322,9 +324,9 @@ func TestE2EBridgeTransfersStandardBridgeETHWithdrawal(t *testing.T) {
 	require.Empty(t, aliceWithdrawals.Withdrawals[0].FinalizedL1TransactionHash)
 
 	// wait for processor catchup
-	proveReceipt, finalizeReceipt := op_e2e.ProveAndFinalizeWithdrawal(t, *testSuite.OpCfg, testSuite.L1Client, testSuite.OpSys.Nodes["sequencer"], testSuite.OpCfg.Secrets.Alice, withdrawReceipt)
+	proveReceipt, finalizeReceipt := op_e2e.ProveAndFinalizeWithdrawal(t, *testSuite.OpCfg, testSuite.L1Client, testSuite.OpSys.EthInstances["sequencer"], testSuite.OpCfg.Secrets.Alice, withdrawReceipt)
 	require.NoError(t, wait.For(context.Background(), 500*time.Millisecond, func() (bool, error) {
-		l1Header := testSuite.Indexer.L1Processor.LatestProcessedHeader()
+		l1Header := testSuite.Indexer.BridgeProcessor.LatestL1Header
 		return l1Header != nil && l1Header.Number.Uint64() >= finalizeReceipt.BlockNumber.Uint64(), nil
 	}))
 
@@ -339,7 +341,7 @@ func TestE2EBridgeTransfersStandardBridgeETHWithdrawal(t *testing.T) {
 	require.NotNil(t, crossDomainBridgeMessage.RelayedMessageEventGUID)
 }
 
-func TestE2EBridgeTransfersL2ToL1MessagePasserReceive(t *testing.T) {
+func TestE2EBridgeTransfersL2ToL1MessagePasserETHReceive(t *testing.T) {
 	testSuite := createE2ETestSuite(t)
 
 	optimismPortal, err := bindings.NewOptimismPortal(testSuite.OpCfg.L1Deployments.OptimismPortalProxy, testSuite.L1Client)
@@ -370,12 +372,13 @@ func TestE2EBridgeTransfersL2ToL1MessagePasserReceive(t *testing.T) {
 
 	// wait for processor catchup
 	require.NoError(t, wait.For(context.Background(), 500*time.Millisecond, func() (bool, error) {
-		l2Header := testSuite.Indexer.L2Processor.LatestProcessedHeader()
+		l2Header := testSuite.Indexer.BridgeProcessor.LatestL2Header
 		return l2Header != nil && l2Header.Number.Uint64() >= l2ToL1WithdrawReceipt.BlockNumber.Uint64(), nil
 	}))
 
 	aliceWithdrawals, err := testSuite.DB.BridgeTransfers.L2BridgeWithdrawalsByAddress(aliceAddr, "", 0)
 	require.NoError(t, err)
+	require.Len(t, aliceWithdrawals.Withdrawals, 1)
 	require.Equal(t, l2ToL1MessagePasserWithdrawTx.Hash().String(), aliceWithdrawals.Withdrawals[0].L2TransactionHash.String())
 
 	msgPassed, err := withdrawals.ParseMessagePassed(l2ToL1WithdrawReceipt)
@@ -387,7 +390,7 @@ func TestE2EBridgeTransfersL2ToL1MessagePasserReceive(t *testing.T) {
 	require.Equal(t, withdrawalHash, withdrawal.TransactionWithdrawalHash)
 	require.Equal(t, predeploys.LegacyERC20ETHAddr, withdrawal.TokenPair.LocalTokenAddress)
 	require.Equal(t, predeploys.LegacyERC20ETHAddr, withdrawal.TokenPair.RemoteTokenAddress)
-	require.Equal(t, big.NewInt(params.Ether), withdrawal.Tx.Amount.Int)
+	require.Equal(t, uint64(params.Ether), withdrawal.Tx.Amount.Uint64())
 	require.Equal(t, aliceAddr, withdrawal.Tx.FromAddress)
 	require.Equal(t, aliceAddr, withdrawal.Tx.ToAddress)
 	require.Len(t, withdrawal.Tx.Data, 0)
@@ -400,9 +403,9 @@ func TestE2EBridgeTransfersL2ToL1MessagePasserReceive(t *testing.T) {
 	require.Empty(t, aliceWithdrawals.Withdrawals[0].FinalizedL1TransactionHash)
 
 	// wait for processor catchup
-	proveReceipt, finalizeReceipt := op_e2e.ProveAndFinalizeWithdrawal(t, *testSuite.OpCfg, testSuite.L1Client, testSuite.OpSys.Nodes["sequencer"], testSuite.OpCfg.Secrets.Alice, l2ToL1WithdrawReceipt)
+	proveReceipt, finalizeReceipt := op_e2e.ProveAndFinalizeWithdrawal(t, *testSuite.OpCfg, testSuite.L1Client, testSuite.OpSys.EthInstances["sequencer"], testSuite.OpCfg.Secrets.Alice, l2ToL1WithdrawReceipt)
 	require.NoError(t, wait.For(context.Background(), 500*time.Millisecond, func() (bool, error) {
-		l1Header := testSuite.Indexer.L1Processor.LatestProcessedHeader()
+		l1Header := testSuite.Indexer.BridgeProcessor.LatestL1Header
 		return l1Header != nil && l1Header.Number.Uint64() >= finalizeReceipt.BlockNumber.Uint64(), nil
 	}))
 

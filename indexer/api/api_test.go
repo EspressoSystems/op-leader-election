@@ -56,7 +56,7 @@ func (mbv *MockBridgeTransfersView) L2BridgeWithdrawalWithFilter(filter database
 
 func (mbv *MockBridgeTransfersView) L1BridgeDepositsByAddress(address common.Address, cursor string, limit int) (*database.L1BridgeDepositsResponse, error) {
 	return &database.L1BridgeDepositsResponse{
-		Deposits: []*database.L1BridgeDepositWithTransactionHashes{
+		Deposits: []database.L1BridgeDepositWithTransactionHashes{
 			{
 				L1BridgeDeposit:   deposit,
 				L1TransactionHash: common.HexToHash("0x123"),
@@ -67,7 +67,7 @@ func (mbv *MockBridgeTransfersView) L1BridgeDepositsByAddress(address common.Add
 
 func (mbv *MockBridgeTransfersView) L2BridgeWithdrawalsByAddress(address common.Address, cursor string, limit int) (*database.L2BridgeWithdrawalsResponse, error) {
 	return &database.L2BridgeWithdrawalsResponse{
-		Withdrawals: []*database.L2BridgeWithdrawalWithTransactionHashes{
+		Withdrawals: []database.L2BridgeWithdrawalWithTransactionHashes{
 			{
 				L2BridgeWithdrawal: withdrawal,
 				L2TransactionHash:  common.HexToHash("0x789"),
@@ -77,7 +77,7 @@ func (mbv *MockBridgeTransfersView) L2BridgeWithdrawalsByAddress(address common.
 }
 func TestHealthz(t *testing.T) {
 	logger := testlog.Logger(t, log.LvlInfo)
-	api := NewApi(&MockBridgeTransfersView{}, logger)
+	api := NewApi(logger, &MockBridgeTransfersView{})
 	request, err := http.NewRequest("GET", "/healthz", nil)
 	assert.Nil(t, err)
 
@@ -89,7 +89,7 @@ func TestHealthz(t *testing.T) {
 
 func TestL1BridgeDepositsHandler(t *testing.T) {
 	logger := testlog.Logger(t, log.LvlInfo)
-	api := NewApi(&MockBridgeTransfersView{}, logger)
+	api := NewApi(logger, &MockBridgeTransfersView{})
 	request, err := http.NewRequest("GET", fmt.Sprintf("/api/v0/deposits/%s", mockAddress), nil)
 	assert.Nil(t, err)
 
@@ -101,7 +101,7 @@ func TestL1BridgeDepositsHandler(t *testing.T) {
 
 func TestL2BridgeWithdrawalsByAddressHandler(t *testing.T) {
 	logger := testlog.Logger(t, log.LvlInfo)
-	api := NewApi(&MockBridgeTransfersView{}, logger)
+	api := NewApi(logger, &MockBridgeTransfersView{})
 	request, err := http.NewRequest("GET", fmt.Sprintf("/api/v0/withdrawals/%s", mockAddress), nil)
 	assert.Nil(t, err)
 

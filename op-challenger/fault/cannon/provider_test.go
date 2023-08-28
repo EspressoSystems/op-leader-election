@@ -149,7 +149,6 @@ func TestGetStepData(t *testing.T) {
 
 func TestAbsolutePreState(t *testing.T) {
 	dataDir := t.TempDir()
-	_ = os.Mkdir(dataDir, 0o777)
 
 	prestate := "state.json"
 
