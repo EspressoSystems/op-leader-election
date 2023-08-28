@@ -63,11 +63,12 @@ contract RoundRobinLeaderElectionTest is Test {
         address notALeader = vm.addr(1234);
         vm.prank(notALeader);
         vm.expectRevert("RoundRobinLeaderElection: submit function must be called by the leader.");
-        leaderContract.submit("hi");
+        LeaderElectionBatchInbox.Meta[] memory metas = new LeaderElectionBatchInbox.Meta[](1);
+        leaderContract.submit(metas, "frames");
 
         // Correct leader, does not revert
         vm.prank(vm.addr(1));
-        leaderContract.submit("hi");
+        leaderContract.submit(metas, "frames");
     }
 
     function test_nextBlocksAsLeader_success() external {
