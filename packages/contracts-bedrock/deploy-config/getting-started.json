@@ -55,5 +55,7 @@
 
   "systemConfigStartBlock": 0,
 
-  "leaderElectionMaxParticipants": 5
+  "leaderElectionMaxParticipants": 5,
+
+  "batchInboxContractAddress": "0xff00000000000000000000000000000000042069"
 }

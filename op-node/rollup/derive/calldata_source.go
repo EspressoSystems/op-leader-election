@@ -169,7 +169,7 @@ func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, 
 func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
 	var out []eth.Data
 	for j, tx := range txs {
-		if to := tx.To(); to != nil && *to == config.BatchInboxAddress {
+		if to := tx.To(); to != nil && *to == config.BatchInboxContractAddr {
 			receipt := receipts[j]
 			data := tx.Data()
 			// Exclude transactions if L1 transaction did call submit function.

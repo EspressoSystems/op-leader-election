@@ -155,6 +155,7 @@ func Setup(t require.TestingT, deployParams *DeployParams, alloc *AllocParams) *
 		BatchInboxAddress:      deployConf.BatchInboxAddress,
 		DepositContractAddress: deployConf.OptimismPortalProxy,
 		L1SystemConfigAddress:  deployConf.SystemConfigProxy,
+		BatchInboxContractAddr: deployConf.BatchInboxContractAddress,
 		RegolithTime:           deployConf.RegolithTime(uint64(deployConf.L1GenesisBlockTimestamp)),
 	}
 

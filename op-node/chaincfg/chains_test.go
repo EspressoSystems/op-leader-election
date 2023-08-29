@@ -61,6 +61,7 @@ var mainnetCfg = rollup.Config{
 	L1ChainID:              big.NewInt(1),
 	L2ChainID:              big.NewInt(10),
 	BatchInboxAddress:      common.HexToAddress("0xff00000000000000000000000000000000000010"),
+	BatchInboxContractAddr: common.HexToAddress("0xffffffffffffffffffffffffffffffffffffffff"), // TODO use real address
 	DepositContractAddress: common.HexToAddress("0xbEb5Fc579115071764c7423A4f12eDde41f106Ed"),
 	L1SystemConfigAddress:  common.HexToAddress("0x229047fed2591dbec1eF1118d64F7aF3dB9EB290"),
 	RegolithTime:           u64Ptr(0),
@@ -91,6 +92,7 @@ var goerliCfg = rollup.Config{
 	L1ChainID:              big.NewInt(5),
 	L2ChainID:              big.NewInt(420),
 	BatchInboxAddress:      common.HexToAddress("0xff00000000000000000000000000000000000420"),
+	BatchInboxContractAddr: common.HexToAddress("0xffffffffffffffffffffffffffffffffffffffff"), // TODO use real address
 	DepositContractAddress: common.HexToAddress("0x5b47E1A08Ea6d985D6649300584e6722Ec4B1383"),
 	L1SystemConfigAddress:  common.HexToAddress("0xAe851f927Ee40dE99aaBb7461C00f9622ab91d60"),
 	RegolithTime:           u64Ptr(1679079600),
@@ -121,6 +123,7 @@ var sepoliaCfg = rollup.Config{
 	L1ChainID:              big.NewInt(11155111),
 	L2ChainID:              big.NewInt(11155420),
 	BatchInboxAddress:      common.HexToAddress("0xff00000000000000000000000000000011155420"),
+	BatchInboxContractAddr: common.HexToAddress("0xffffffffffffffffffffffffffffffffffffffff"), // TODO use real address
 	DepositContractAddress: common.HexToAddress("0x16fc5058f25648194471939df75cf27a2fdc48bc"),
 	L1SystemConfigAddress:  common.HexToAddress("0x034edd2a225f7f429a63e0f1d2084b9e0a93b538"),
 	RegolithTime:           u64Ptr(0),

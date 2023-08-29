@@ -29,6 +29,7 @@ var (
 	ErrMissingGasLimit               = errors.New("missing genesis system config gas limit")
 	ErrMissingBatchInboxAddress      = errors.New("missing batch inbox address")
 	ErrMissingDepositContractAddress = errors.New("missing deposit contract address")
+	ErrMissingBatchInboxContractAddr = errors.New("missing batch inbox contract address")
 	ErrMissingL1ChainID              = errors.New("L1 chain ID must not be nil")
 	ErrMissingL2ChainID              = errors.New("L2 chain ID must not be nil")
 	ErrChainIDsSame                  = errors.New("L1 and L2 chain IDs must be different")
@@ -84,6 +85,8 @@ type Config struct {
 	DepositContractAddress common.Address `json:"deposit_contract_address"`
 	// L1 System Config Address
 	L1SystemConfigAddress common.Address `json:"l1_system_config_address"`
+	// Initial L1 deployed contract that batches are sent to after batcher V2
+	BatchInboxContractAddr common.Address `json:"batch_inbox_contract_address"`
 }
 
 // ValidateL1Config checks L1 config variables for errors.
@@ -228,6 +231,9 @@ func (cfg *Config) Check() error {
 	}
 	if cfg.DepositContractAddress == (common.Address{}) {
 		return ErrMissingDepositContractAddress
+	}
+	if cfg.BatchInboxContractAddr == (common.Address{}) {
+		return ErrMissingBatchInboxContractAddr
 	}
 	if cfg.L1ChainID == nil {
 		return ErrMissingL1ChainID

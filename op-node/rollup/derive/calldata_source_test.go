@@ -56,8 +56,9 @@ func TestDataFromEVMTransactions(t *testing.T) {
 	inboxPriv := testutils.RandomKey()
 	batcherPriv := testutils.RandomKey()
 	cfg := &rollup.Config{
-		L1ChainID:         big.NewInt(100),
-		BatchInboxAddress: crypto.PubkeyToAddress(inboxPriv.PublicKey),
+		L1ChainID:              big.NewInt(100),
+		BatchInboxAddress:      crypto.PubkeyToAddress(inboxPriv.PublicKey),
+		BatchInboxContractAddr: crypto.PubkeyToAddress(inboxPriv.PublicKey),
 	}
 	batcherAddr := crypto.PubkeyToAddress(batcherPriv.PublicKey)
 

@@ -77,6 +77,12 @@ var (
 		Usage:   "Initialize the batcher in a stopped state. The batcher can be started using the admin_startBatcher RPC",
 		EnvVars: prefixEnvVars("STOPPED"),
 	}
+	StartWithVersionFlag = &cli.Uint64Flag{
+		Name:    "start-with-batcher-version",
+		Usage:   "Launch with batcher version setting (e.g. 1: BatchV1, 2: BatchV2)",
+		Value:   1,
+		EnvVars: prefixEnvVars("BATCHER_LAUNCH_WITH_VERSION"),
+	}
 	// Legacy Flags
 	SequencerHDPathFlag = txmgr.SequencerHDPathFlag
 )
@@ -95,6 +101,7 @@ var optionalFlags = []cli.Flag{
 	MaxL1TxSizeBytesFlag,
 	StoppedFlag,
 	SequencerHDPathFlag,
+	StartWithVersionFlag,
 }
 
 func init() {

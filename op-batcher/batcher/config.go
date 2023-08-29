@@ -3,6 +3,7 @@ package batcher
 import (
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
@@ -30,12 +31,16 @@ type Config struct {
 	NetworkTimeout         time.Duration
 	PollInterval           time.Duration
 	MaxPendingTransactions uint64
+	BatchInboxVersion      int
 
 	// RollupConfig is queried at startup
 	Rollup *rollup.Config
 
 	// Channel builder parameters
 	Channel ChannelConfig
+
+	// Batch Inbox Contract ABI
+	BatchInboxAbi *abi.ABI
 }
 
 // Check ensures that the [Config] is valid.
@@ -93,6 +98,7 @@ type CLIConfig struct {
 	MetricsConfig    opmetrics.CLIConfig
 	PprofConfig      oppprof.CLIConfig
 	CompressorConfig compressor.CLIConfig
+	StartWithVersion uint64
 }
 
 func (c CLIConfig) Check() error {
@@ -135,5 +141,6 @@ func NewConfig(ctx *cli.Context) CLIConfig {
 		MetricsConfig:          opmetrics.ReadCLIConfig(ctx),
 		PprofConfig:            oppprof.ReadCLIConfig(ctx),
 		CompressorConfig:       compressor.ReadCLIConfig(ctx),
+		StartWithVersion:       ctx.Uint64(flags.StartWithVersionFlag.Name),
 	}
 }

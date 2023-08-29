@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
+	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	opclient "github.com/ethereum-optimism/optimism/op-service/client"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
@@ -75,6 +77,16 @@ func NewBatchSubmitterFromCLIConfig(cfg CLIConfig, l log.Logger, m metrics.Metri
 		return nil, err
 	}
 
+	biAbi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+	if err != nil {
+		return nil, err
+	}
+
+	batchInboxVersion := derive.BatchV1Type
+	if cfg.StartWithVersion == 2 {
+		batchInboxVersion = derive.BatchV2Type
+	}
+
 	batcherCfg := Config{
 		L1Client:               l1Client,
 		L2Client:               l2Client,
@@ -82,6 +94,7 @@ func NewBatchSubmitterFromCLIConfig(cfg CLIConfig, l log.Logger, m metrics.Metri
 		PollInterval:           cfg.PollInterval,
 		MaxPendingTransactions: cfg.MaxPendingTransactions,
 		NetworkTimeout:         cfg.TxMgrConfig.NetworkTimeout,
+		BatchInboxVersion:      batchInboxVersion,
 		TxManager:              txManager,
 		Rollup:                 rcfg,
 		Channel: ChannelConfig{
@@ -92,6 +105,7 @@ func NewBatchSubmitterFromCLIConfig(cfg CLIConfig, l log.Logger, m metrics.Metri
 			MaxFrameSize:       cfg.MaxL1TxSize - 1, // subtract 1 byte for version
 			CompressorConfig:   cfg.CompressorConfig.Config(),
 		},
+		BatchInboxAbi: biAbi,
 	}
 
 	// Validate the batcher config
@@ -114,6 +128,13 @@ func NewBatchSubmitter(ctx context.Context, cfg Config, l log.Logger, m metrics.
 	cfg.log.Info("creating batch submitter", "submitter_addr", cfg.TxManager.From(), "submitter_bal", balance)
 
 	cfg.metr = m
+
+	if cfg.BatchInboxAbi == nil {
+		biAbi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+		if err == nil && biAbi != nil {
+			cfg.BatchInboxAbi = biAbi
+		}
+	}
 
 	return &BatchSubmitter{
 		Config: cfg,
@@ -266,7 +287,7 @@ func (l *BatchSubmitter) calculateL2BlockRangeToStore(ctx context.Context) (eth.
 
 	// Check if we should even attempt to load any blocks. TODO: May not need this check
 	if syncStatus.SafeL2.Number >= syncStatus.UnsafeL2.Number {
-		return eth.BlockID{}, eth.BlockID{}, errors.New("L2 safe head ahead of L2 unsafe head")
+		return eth.BlockID{}, eth.BlockID{}, fmt.Errorf("L2 safe head (%d) ahead of L2 unsafe head (%d)", syncStatus.SafeL2.Number, syncStatus.UnsafeL2.Number)
 	}
 
 	return l.lastStoredBlock, syncStatus.UnsafeL2.ID(), nil
@@ -372,28 +393,63 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 		return err
 	}
 
-	l.sendTransaction(txdata, queue, receiptsCh)
+	l.sendTransaction(ctx, txdata, queue, receiptsCh)
 	return nil
 }
 
 // sendTransaction creates & submits a transaction to the batch inbox address with the given `data`.
 // It currently uses the underlying `txmgr` to handle transaction sending & price management.
 // This is a blocking method. It should not be called concurrently.
-func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) {
+func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) {
 	// Do the gas estimation offline. A value of 0 will cause the [txmgr] to estimate the gas limit.
 	data := txdata.Bytes()
-	intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
-	if err != nil {
-		l.log.Error("Failed to calculate intrinsic gas", "error", err)
-		return
-	}
 
+	toAddr := &l.Rollup.BatchInboxAddress
+	if l.Config.BatchInboxVersion == derive.BatchV2Type {
+		toAddr = &l.Rollup.BatchInboxContractAddr
+	}
 	candidate := txmgr.TxCandidate{
-		To:       &l.Rollup.BatchInboxAddress,
+		To:       toAddr,
 		TxData:   data,
-		GasLimit: intrinsicGas,
+		GasLimit: 0,
+	}
+	if l.Config.BatchInboxVersion == derive.BatchV2Type && l.Config.BatchInboxAbi != nil {
+		submit, exists := l.Config.BatchInboxAbi.Methods["submit"]
+		if exists {
+			candidate.MethodId = submit.ID
+		}
+		estimatedGas, err := l.estimateGas(ctx, candidate)
+		if err != nil {
+			l.log.Error("Failed to get gas estimate", "error", err)
+			return
+		}
+		candidate.GasLimit = estimatedGas
+	} else {
+		intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
+		if err != nil {
+			l.log.Error("Failed to calculate intrinsic gas", "error", err)
+			return
+		}
+		candidate.GasLimit = intrinsicGas
 	}
 	queue.Send(txdata, candidate, receiptsCh)
+}
+
+func (l *BatchSubmitter) estimateGas(ctx context.Context, candidate txmgr.TxCandidate) (uint64, error) {
+	data := candidate.TxData
+
+	if len(candidate.MethodId) >= 4 {
+		data = append(candidate.MethodId[:4], data...)
+	}
+
+	tctx, cancel := context.WithTimeout(ctx, l.NetworkTimeout)
+	defer cancel()
+
+	return l.Config.L1Client.EstimateGas(tctx, ethereum.CallMsg{
+		To:   &l.Rollup.BatchInboxContractAddr,
+		Data: data,
+	})
+
 }
 
 func (l *BatchSubmitter) handleReceipt(r txmgr.TxReceipt[txData]) {

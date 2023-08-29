@@ -138,6 +138,9 @@ type TxCandidate struct {
 	TxData []byte
 	// To is the recipient of the constructed tx. Nil means contract creation.
 	To *common.Address
+	// MethodId is the selector identity of a function on a contract at
+	// the address specified, if applicable. If empty, no function shall be selected
+	MethodId []byte
 	// GasLimit is the gas limit to be used in the constructed tx.
 	GasLimit uint64
 }
@@ -207,13 +210,19 @@ func (m *SimpleTxManager) craftTx(ctx context.Context, candidate TxCandidate) (*
 		return nil, err
 	}
 
+	data := candidate.TxData
+
+	if len(candidate.MethodId) >= 4 {
+		data = append(candidate.MethodId[:4], data...)
+	}
+
 	rawTx := &types.DynamicFeeTx{
 		ChainID:   m.chainID,
 		Nonce:     nonce,
 		To:        candidate.To,
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
-		Data:      candidate.TxData,
+		Data:      data,
 	}
 
 	m.l.Info("Creating tx", "to", rawTx.To, "from", m.cfg.From)

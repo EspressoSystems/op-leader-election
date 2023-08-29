@@ -412,6 +412,7 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 			BatchInboxAddress:      cfg.DeployConfig.BatchInboxAddress,
 			DepositContractAddress: cfg.DeployConfig.OptimismPortalProxy,
 			L1SystemConfigAddress:  cfg.DeployConfig.SystemConfigProxy,
+			BatchInboxContractAddr: cfg.DeployConfig.BatchInboxContractAddress,
 			RegolithTime:           cfg.DeployConfig.RegolithTime(uint64(cfg.DeployConfig.L1GenesisBlockTimestamp)),
 		}
 	}
