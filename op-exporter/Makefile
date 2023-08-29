@@ -1,4 +1,4 @@
-SHELL := /bin/bash
+SHELL := /usr/bin/env bash
 
 ifndef VERSION
 VERSION := `jq .version package.json `
