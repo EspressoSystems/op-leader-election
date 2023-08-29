@@ -91,6 +91,8 @@ func LoadOPStackRollupConfig(chainID uint64) (*Config, error) {
 		BatchInboxAddress:      common.Address(chConfig.BatchInboxAddr),
 		DepositContractAddress: depositContractAddress,
 		L1SystemConfigAddress:  common.Address(chConfig.SystemConfigAddr),
+		// TODO: use the BatchInboxContractAddress address
+		BatchInboxContractAddr: common.HexToAddress("0xffffffffffffffffffffffffffffffffffffffff"),
 	}
 	return cfg, nil
 }
