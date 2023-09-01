@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -48,10 +49,11 @@ var mainnetCfg = rollup.Config{
 		},
 		L2Time: 1686068903,
 		SystemConfig: eth.SystemConfig{
-			BatcherAddr: common.HexToAddress("0x6887246668a3b87f54deb3b94ba47a6f63f32985"),
-			Overhead:    eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000bc")),
-			Scalar:      eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000a6fe0")),
-			GasLimit:    30_000_000,
+			BatcherAddr:        common.HexToAddress("0x6887246668a3b87f54deb3b94ba47a6f63f32985"),
+			Overhead:           eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000bc")),
+			Scalar:             eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000a6fe0")),
+			GasLimit:           30_000_000,
+			BatcherHashVersion: uint8(derive.BatchV1Type),
 		},
 	},
 	BlockTime:              2,
@@ -79,10 +81,11 @@ var goerliCfg = rollup.Config{
 		},
 		L2Time: 1673550516,
 		SystemConfig: eth.SystemConfig{
-			BatcherAddr: common.HexToAddress("0x7431310e026B69BFC676C0013E12A1A11411EEc9"),
-			Overhead:    eth.Bytes32(common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000834")),
-			Scalar:      eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000f4240")),
-			GasLimit:    25_000_000,
+			BatcherAddr:        common.HexToAddress("0x7431310e026B69BFC676C0013E12A1A11411EEc9"),
+			Overhead:           eth.Bytes32(common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000834")),
+			Scalar:             eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000f4240")),
+			GasLimit:           25_000_000,
+			BatcherHashVersion: uint8(derive.BatchV1Type),
 		},
 	},
 	BlockTime:              2,
@@ -110,10 +113,11 @@ var sepoliaCfg = rollup.Config{
 		},
 		L2Time: 1691802540,
 		SystemConfig: eth.SystemConfig{
-			BatcherAddr: common.HexToAddress("0x8F23BB38F531600e5d8FDDaAEC41F13FaB46E98c"),
-			Overhead:    eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000bc")),
-			Scalar:      eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000a6fe0")),
-			GasLimit:    30000000,
+			BatcherAddr:        common.HexToAddress("0x8F23BB38F531600e5d8FDDaAEC41F13FaB46E98c"),
+			Overhead:           eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000bc")),
+			Scalar:             eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000a6fe0")),
+			GasLimit:           30000000,
+			BatcherHashVersion: uint8(derive.BatchV1Type),
 		},
 	},
 	BlockTime:              2,

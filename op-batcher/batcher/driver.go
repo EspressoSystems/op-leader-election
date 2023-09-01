@@ -205,8 +205,9 @@ func (l *BatchSubmitter) Stop(ctx context.Context) error {
 // It does the following:
 // 1. Fetch the sync status of the sequencer
 // 2. Check if the sync status is valid or if we are all the way up to date
-// 3. Check if it needs to initialize state OR it is lagging (todo: lagging just means race condition?)
-// 4. Load all new blocks into the local state.
+// 3. Confirm that this batcher is currently the leader; if not, clear the state and exit.
+// 4. Check if it needs to initialize state OR it is lagging (todo: lagging just means race condition?)
+// 5. Load all new blocks into the local state.
 // If there is a reorg, it will reset the last stored block but not clear the internal state so
 // the state can be flushed to L1.
 func (l *BatchSubmitter) loadBlocksIntoState(ctx context.Context) error {

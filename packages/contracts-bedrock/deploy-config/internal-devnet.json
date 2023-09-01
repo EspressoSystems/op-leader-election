@@ -50,6 +50,7 @@
   "eip1559Elasticity": 10,
 
   "leaderElectionMaxParticipants": 5,
+  "initialBatcherVersion": 0,
 
   "systemConfigStartBlock": 8364212
 }
