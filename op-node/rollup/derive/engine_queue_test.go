@@ -243,7 +243,7 @@ func TestEngineQueue_Finalize(t *testing.T) {
 		Overhead:           [32]byte{123},
 		Scalar:             [32]byte{42},
 		GasLimit:           20_000_000,
-		BatcherHashVersion: uint8(BatchV1Type),
+		BatcherHashVersion: uint8(0),
 	}, nil)
 
 	prev := &fakeAttributesQueue{}
@@ -478,7 +478,7 @@ func TestEngineQueue_ResetWhenUnsafeOriginNotCanonical(t *testing.T) {
 		Overhead:           [32]byte{123},
 		Scalar:             [32]byte{42},
 		GasLimit:           20_000_000,
-		BatcherHashVersion: uint8(BatchV1Type),
+		BatcherHashVersion: uint8(0),
 	}, nil)
 
 	prev := &fakeAttributesQueue{origin: refE}
@@ -811,7 +811,7 @@ func TestVerifyNewL1Origin(t *testing.T) {
 				Overhead:           [32]byte{123},
 				Scalar:             [32]byte{42},
 				GasLimit:           20_000_000,
-				BatcherHashVersion: uint8(BatchV1Type),
+				BatcherHashVersion: uint8(0),
 			}, nil)
 
 			prev := &fakeAttributesQueue{origin: refE}
@@ -875,7 +875,7 @@ func TestBlockBuildingRace(t *testing.T) {
 				Overhead:           [32]byte{123},
 				Scalar:             [32]byte{42},
 				GasLimit:           20_000_000,
-				BatcherHashVersion: uint8(BatchV1Type),
+				BatcherHashVersion: uint8(0),
 			},
 		},
 		BlockTime:     1,
@@ -1041,7 +1041,7 @@ func TestResetLoop(t *testing.T) {
 				Overhead:           [32]byte{123},
 				Scalar:             [32]byte{42},
 				GasLimit:           20_000_000,
-				BatcherHashVersion: uint8(BatchV1Type),
+				BatcherHashVersion: uint8(0),
 			},
 		},
 		BlockTime:     1,
@@ -1142,7 +1142,7 @@ func TestEngineQueue_StepPopOlderUnsafe(t *testing.T) {
 				Overhead:           [32]byte{123},
 				Scalar:             [32]byte{42},
 				GasLimit:           20_000_000,
-				BatcherHashVersion: uint8(BatchV1Type),
+				BatcherHashVersion: uint8(0),
 			},
 		},
 		BlockTime:     1,

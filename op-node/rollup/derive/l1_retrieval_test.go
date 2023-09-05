@@ -87,7 +87,7 @@ func TestL1RetrievalReset(t *testing.T) {
 	a := testutils.RandomBlockRef(rng)
 	l1Cfg := eth.SystemConfig{
 		BatcherAddr:        common.Address{42},
-		BatcherHashVersion: uint8(BatchV1Type),
+		BatcherHashVersion: uint8(0),
 	}
 
 	dataSrc.ExpectOpenData(a.ID(), &fakeDataIter{}, l1Cfg.BatcherAddr, l1Cfg.BatcherHashVersion)
@@ -119,7 +119,7 @@ func TestL1RetrievalNextData(t *testing.T) {
 		{
 			name:         "simple retrieval",
 			prevBlock:    a,
-			sysCfg:       eth.SystemConfig{BatcherAddr: common.Address{0x55}, BatcherHashVersion: uint8(BatchV1Type)},
+			sysCfg:       eth.SystemConfig{BatcherAddr: common.Address{0x55}, BatcherHashVersion: uint8(0)},
 			prevErr:      nil,
 			openErr:      nil,
 			datas:        []eth.Data{testutils.RandomData(rng, 10), testutils.RandomData(rng, 10), testutils.RandomData(rng, 10), nil},
@@ -134,7 +134,7 @@ func TestL1RetrievalNextData(t *testing.T) {
 		{
 			name:         "fail to open data",
 			prevBlock:    a,
-			sysCfg:       eth.SystemConfig{BatcherAddr: common.Address{0x55}, BatcherHashVersion: uint8(BatchV1Type)},
+			sysCfg:       eth.SystemConfig{BatcherAddr: common.Address{0x55}, BatcherHashVersion: uint8(0)},
 			prevErr:      nil,
 			openErr:      nil,
 			datas:        []eth.Data{nil},

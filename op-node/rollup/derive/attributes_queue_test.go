@@ -58,14 +58,14 @@ func TestAttributesQueue(t *testing.T) {
 		Overhead:           [32]byte{},
 		Scalar:             [32]byte{},
 		GasLimit:           1234,
-		BatcherHashVersion: uint8(BatchV1Type),
+		BatcherHashVersion: uint8(0),
 	}
 	expectedL1Cfg := eth.SystemConfig{
 		BatcherAddr:        common.Address{42},
 		Overhead:           [32]byte{},
 		Scalar:             [32]byte{},
 		GasLimit:           1234,
-		BatcherHashVersion: uint8(BatchV1Type),
+		BatcherHashVersion: uint8(0),
 	}
 
 	l2Fetcher := &testutils.MockL2Client{}

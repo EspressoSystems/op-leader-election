@@ -30,7 +30,7 @@ func TestL1TraversalNext(t *testing.T) {
 		BatcherAddr:        testutils.RandomAddress(rng),
 		Overhead:           [32]byte{42},
 		Scalar:             [32]byte{69},
-		BatcherHashVersion: uint8(BatchV1Type),
+		BatcherHashVersion: uint8(0),
 	}
 	sysCfgAddr := testutils.RandomAddress(rng)
 	cfg := &rollup.Config{
@@ -85,7 +85,7 @@ func TestL1TraversalAdvance(t *testing.T) {
 				BatcherAddr:        common.Address{11},
 				Overhead:           [32]byte{22},
 				Scalar:             [32]byte{33},
-				BatcherHashVersion: uint8(BatchV1Type),
+				BatcherHashVersion: uint8(0),
 			},
 			l1Receipts:  []*types.Receipt{},
 			fetcherErr:  nil,

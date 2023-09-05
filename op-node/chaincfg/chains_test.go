@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
-	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -53,7 +52,7 @@ var mainnetCfg = rollup.Config{
 			Overhead:           eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000bc")),
 			Scalar:             eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000a6fe0")),
 			GasLimit:           30_000_000,
-			BatcherHashVersion: uint8(derive.BatchV1Type),
+			BatcherHashVersion: uint8(0),
 		},
 	},
 	BlockTime:              2,
@@ -85,7 +84,7 @@ var goerliCfg = rollup.Config{
 			Overhead:           eth.Bytes32(common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000834")),
 			Scalar:             eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000f4240")),
 			GasLimit:           25_000_000,
-			BatcherHashVersion: uint8(derive.BatchV1Type),
+			BatcherHashVersion: uint8(0),
 		},
 	},
 	BlockTime:              2,
@@ -117,7 +116,7 @@ var sepoliaCfg = rollup.Config{
 			Overhead:           eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000bc")),
 			Scalar:             eth.Bytes32(common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000a6fe0")),
 			GasLimit:           30000000,
-			BatcherHashVersion: uint8(derive.BatchV1Type),
+			BatcherHashVersion: uint8(0),
 		},
 	},
 	BlockTime:              2,

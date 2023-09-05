@@ -80,7 +80,7 @@ func FuzzL1InfoAgainstContract(f *testing.F) {
 			BlockHash:      common.BytesToHash(hash),
 			SequenceNumber: seqNumber,
 			BatcherAddr:    common.BytesToAddress(batcherHash),
-			BatcherVersion: BatchV1Type,
+			BatcherVersion: uint8(0),
 			L1FeeOverhead:  eth.Bytes32(common.BytesToHash(l1FeeOverhead)),
 			L1FeeScalar:    eth.Bytes32(common.BytesToHash(l1FeeScalar)),
 		}

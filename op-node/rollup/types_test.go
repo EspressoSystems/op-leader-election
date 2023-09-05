@@ -14,7 +14,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 )
 
@@ -38,7 +37,7 @@ func randConfig() *Config {
 				Overhead:           randHash(),
 				Scalar:             randHash(),
 				GasLimit:           1234567,
-				BatcherHashVersion: uint8(derive.BatchV1Type),
+				BatcherHashVersion: uint8(0),
 			},
 		},
 		BlockTime:              2,
