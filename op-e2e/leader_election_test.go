@@ -8,5 +8,5 @@ import (
 
 func TestLeaderElection(t *testing.T) {
 	InitParallel(t)
-	require.Equal(t, 1000, 1000, "Values are different")
+	require.Equal(t, 2000, 2000, "Values are different")
 }
