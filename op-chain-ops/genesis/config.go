@@ -530,6 +530,8 @@ type L1Deployments struct {
 	OptimismPortal                    common.Address `json:"OptimismPortal"`
 	OptimismPortalProxy               common.Address `json:"OptimismPortalProxy"`
 	ProxyAdmin                        common.Address `json:"ProxyAdmin"`
+	RoundRobinLeaderElection          common.Address `json:"RoundRobinLeaderElection"`
+	RoundRobinLeaderElectionProxy     common.Address `json:"RoundRobinLeaderElectionProxy"`
 	SystemConfig                      common.Address `json:"SystemConfig"`
 	SystemConfigProxy                 common.Address `json:"SystemConfigProxy"`
 }
