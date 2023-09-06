@@ -240,7 +240,7 @@ func BlockToBatch(block *types.Block) (*BatchData, L1BlockInfo, error) {
 	}
 
 	return &BatchData{
-		BatchV1Type,
+		int(l1Info.BatcherVersion),
 		BatchV2{common.Address{}, BatchV1{
 			ParentHash:   block.ParentHash(),
 			EpochNum:     rollup.Epoch(l1Info.Number),

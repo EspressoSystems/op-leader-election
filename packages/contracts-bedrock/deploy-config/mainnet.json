@@ -13,6 +13,7 @@
   "batchInboxAddress": "0xff00000000000000000000000000000000000010",
   "batchSenderAddress": "0x6887246668a3b87F54DeB3b94Ba47a6f63F32985",
   "batchInboxContractAddress": "0xff00000000000000000000000000000000000010",
+  "initialBatcherVersion": 0,
   "l2OutputOracleSubmissionInterval": 1800,
   "l2OutputOracleStartingTimestamp": 1686068903,
   "l2OutputOracleStartingBlockNumber": 105235063,

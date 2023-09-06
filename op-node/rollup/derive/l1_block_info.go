@@ -41,9 +41,11 @@ type L1BlockInfo struct {
 	// i.e. when the actual L1 info was first introduced.
 	SequenceNumber uint64
 	// BatcherHash version 0 is just the address with 0 padding to the left.
-	BatcherAddr   common.Address
-	L1FeeOverhead eth.Bytes32
-	L1FeeScalar   eth.Bytes32
+	// BatcherHash version 1 is just the byte 0x01 followed by 31 0x00s.
+	BatcherAddr    common.Address
+	BatcherVersion uint8
+	L1FeeOverhead  eth.Bytes32
+	L1FeeScalar    eth.Bytes32
 }
 
 // Binary Format
@@ -56,7 +58,8 @@ type L1BlockInfo struct {
 // | 32      | BaseFee                  |
 // | 32      | BlockHash                |
 // | 32      | SequenceNumber           |
-// | 32      | BatcherAddr              |
+// | 32      | BatcherVersion           |
+// |         | + BatcherAddr            |
 // | 32      | L1FeeOverhead            |
 // | 32      | L1FeeScalar              |
 // +---------+--------------------------+
@@ -81,7 +84,7 @@ func (info *L1BlockInfo) MarshalBinary() ([]byte, error) {
 	if err := solabi.WriteUint64(w, info.SequenceNumber); err != nil {
 		return nil, err
 	}
-	if err := solabi.WriteAddress(w, info.BatcherAddr); err != nil {
+	if err := solabi.WriteBatcherVersionAndAddr(w, info.BatcherVersion, info.BatcherAddr); err != nil {
 		return nil, err
 	}
 	if err := solabi.WriteEthBytes32(w, info.L1FeeOverhead); err != nil {
@@ -118,7 +121,7 @@ func (info *L1BlockInfo) UnmarshalBinary(data []byte) error {
 	if info.SequenceNumber, err = solabi.ReadUint64(reader); err != nil {
 		return err
 	}
-	if info.BatcherAddr, err = solabi.ReadAddress(reader); err != nil {
+	if info.BatcherVersion, info.BatcherAddr, err = solabi.ReadBatcherHashWithVersion(reader); err != nil {
 		return err
 	}
 	if info.L1FeeOverhead, err = solabi.ReadEthBytes32(reader); err != nil {
@@ -150,6 +153,7 @@ func L1InfoDeposit(seqNumber uint64, block eth.BlockInfo, sysCfg eth.SystemConfi
 		BlockHash:      block.Hash(),
 		SequenceNumber: seqNumber,
 		BatcherAddr:    sysCfg.BatcherAddr,
+		BatcherVersion: sysCfg.BatcherHashVersion,
 		L1FeeOverhead:  sysCfg.Overhead,
 		L1FeeScalar:    sysCfg.Scalar,
 	}

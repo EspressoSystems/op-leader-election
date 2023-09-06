@@ -50,6 +50,7 @@ contract DeployConfig is Script {
     uint256 public systemConfigStartBlock;
     uint256 public leaderElectionMaxParticipants;
     address public batchInboxContractAddress;
+    uint256 public initialBatcherVersion;
 
     constructor(string memory _path) {
         console.log("DeployConfig: reading file %s", _path);
@@ -93,6 +94,7 @@ contract DeployConfig is Script {
         systemConfigStartBlock = stdJson.readUint(_json, "$.systemConfigStartBlock");
         leaderElectionMaxParticipants = stdJson.readUint(_json, "$.leaderElectionMaxParticipants");
         batchInboxContractAddress = stdJson.readAddress(_json, "$.batchInboxContractAddress");
+        initialBatcherVersion = stdJson.readUint(_json, "$.initialBatcherVersion");
 
         if (block.chainid == Chains.LocalDevnet || block.chainid == Chains.GethDevnet) {
             faultGameAbsolutePrestate = stdJson.readUint(_json, "$.faultGameAbsolutePrestate");

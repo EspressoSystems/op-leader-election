@@ -239,10 +239,11 @@ func TestEngineQueue_Finalize(t *testing.T) {
 
 	// and mock a L1 config for the last L2 block that references the L1 starting point
 	eng.ExpectSystemConfigByL2Hash(refB1.Hash, eth.SystemConfig{
-		BatcherAddr: common.Address{42},
-		Overhead:    [32]byte{123},
-		Scalar:      [32]byte{42},
-		GasLimit:    20_000_000,
+		BatcherAddr:        common.Address{42},
+		Overhead:           [32]byte{123},
+		Scalar:             [32]byte{42},
+		GasLimit:           20_000_000,
+		BatcherHashVersion: uint8(0),
 	}, nil)
 
 	prev := &fakeAttributesQueue{}
@@ -473,10 +474,11 @@ func TestEngineQueue_ResetWhenUnsafeOriginNotCanonical(t *testing.T) {
 
 	// and mock a L1 config for the last L2 block that references the L1 starting point
 	eng.ExpectSystemConfigByL2Hash(refB1.Hash, eth.SystemConfig{
-		BatcherAddr: common.Address{42},
-		Overhead:    [32]byte{123},
-		Scalar:      [32]byte{42},
-		GasLimit:    20_000_000,
+		BatcherAddr:        common.Address{42},
+		Overhead:           [32]byte{123},
+		Scalar:             [32]byte{42},
+		GasLimit:           20_000_000,
+		BatcherHashVersion: uint8(0),
 	}, nil)
 
 	prev := &fakeAttributesQueue{origin: refE}
@@ -805,10 +807,11 @@ func TestVerifyNewL1Origin(t *testing.T) {
 
 			// and mock a L1 config for the last L2 block that references the L1 starting point
 			eng.ExpectSystemConfigByL2Hash(refB1.Hash, eth.SystemConfig{
-				BatcherAddr: common.Address{42},
-				Overhead:    [32]byte{123},
-				Scalar:      [32]byte{42},
-				GasLimit:    20_000_000,
+				BatcherAddr:        common.Address{42},
+				Overhead:           [32]byte{123},
+				Scalar:             [32]byte{42},
+				GasLimit:           20_000_000,
+				BatcherHashVersion: uint8(0),
 			}, nil)
 
 			prev := &fakeAttributesQueue{origin: refE}
@@ -868,10 +871,11 @@ func TestBlockBuildingRace(t *testing.T) {
 			L2:     refA0.ID(),
 			L2Time: refA0.Time,
 			SystemConfig: eth.SystemConfig{
-				BatcherAddr: common.Address{42},
-				Overhead:    [32]byte{123},
-				Scalar:      [32]byte{42},
-				GasLimit:    20_000_000,
+				BatcherAddr:        common.Address{42},
+				Overhead:           [32]byte{123},
+				Scalar:             [32]byte{42},
+				GasLimit:           20_000_000,
+				BatcherHashVersion: uint8(0),
 			},
 		},
 		BlockTime:     1,
@@ -1033,10 +1037,11 @@ func TestResetLoop(t *testing.T) {
 			L2:     refA0.ID(),
 			L2Time: refA0.Time,
 			SystemConfig: eth.SystemConfig{
-				BatcherAddr: common.Address{42},
-				Overhead:    [32]byte{123},
-				Scalar:      [32]byte{42},
-				GasLimit:    20_000_000,
+				BatcherAddr:        common.Address{42},
+				Overhead:           [32]byte{123},
+				Scalar:             [32]byte{42},
+				GasLimit:           20_000_000,
+				BatcherHashVersion: uint8(0),
 			},
 		},
 		BlockTime:     1,
@@ -1133,10 +1138,11 @@ func TestEngineQueue_StepPopOlderUnsafe(t *testing.T) {
 			L2:     refA0.ID(),
 			L2Time: refA0.Time,
 			SystemConfig: eth.SystemConfig{
-				BatcherAddr: common.Address{42},
-				Overhead:    [32]byte{123},
-				Scalar:      [32]byte{42},
-				GasLimit:    20_000_000,
+				BatcherAddr:        common.Address{42},
+				Overhead:           [32]byte{123},
+				Scalar:             [32]byte{42},
+				GasLimit:           20_000_000,
+				BatcherHashVersion: uint8(0),
 			},
 		},
 		BlockTime:     1,
