@@ -528,6 +528,7 @@ func L1InfoFromState(ctx context.Context, contract *bindings.L1Block, l2Number *
 	if err != nil {
 		return derive.L1BlockInfo{}, fmt.Errorf("failed to get batch sender: %w", err)
 	}
+	out.BatcherVersion = batcherHash[0]
 	out.BatcherAddr = common.BytesToAddress(batcherHash[:])
 
 	return out, nil
@@ -987,6 +988,7 @@ func TestL1InfoContract(t *testing.T) {
 			BlockHash:      h,
 			SequenceNumber: 0, // ignored, will be overwritten
 			BatcherAddr:    sys.RollupConfig.Genesis.SystemConfig.BatcherAddr,
+			BatcherVersion: sys.RollupConfig.Genesis.SystemConfig.BatcherHashVersion,
 			L1FeeOverhead:  sys.RollupConfig.Genesis.SystemConfig.Overhead,
 			L1FeeScalar:    sys.RollupConfig.Genesis.SystemConfig.Scalar,
 		}

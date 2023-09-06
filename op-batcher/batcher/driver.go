@@ -42,6 +42,8 @@ type BatchSubmitter struct {
 	lastStoredBlock eth.BlockID
 	lastL1Tip       eth.L1BlockRef
 
+	submitMethodId []byte
+
 	state *channelManager
 }
 
@@ -129,17 +131,23 @@ func NewBatchSubmitter(ctx context.Context, cfg Config, l log.Logger, m metrics.
 
 	cfg.metr = m
 
+	var submitMethodId []byte
 	if cfg.BatchInboxAbi == nil {
 		biAbi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
 		if err == nil && biAbi != nil {
 			cfg.BatchInboxAbi = biAbi
+			submit, exists := biAbi.Methods["submit"]
+			if exists {
+				submitMethodId = submit.ID
+			}
 		}
 	}
 
 	return &BatchSubmitter{
-		Config: cfg,
-		txMgr:  cfg.TxManager,
-		state:  NewChannelManager(l, m, cfg.Channel),
+		Config:         cfg,
+		txMgr:          cfg.TxManager,
+		state:          NewChannelManager(l, m, cfg.Channel),
+		submitMethodId: submitMethodId,
 	}, nil
 
 }
@@ -205,8 +213,9 @@ func (l *BatchSubmitter) Stop(ctx context.Context) error {
 // It does the following:
 // 1. Fetch the sync status of the sequencer
 // 2. Check if the sync status is valid or if we are all the way up to date
-// 3. Check if it needs to initialize state OR it is lagging (todo: lagging just means race condition?)
-// 4. Load all new blocks into the local state.
+// 3. Confirm that this batcher is currently the leader; if not, clear the state and exit.
+// 4. Check if it needs to initialize state OR it is lagging (todo: lagging just means race condition?)
+// 5. Load all new blocks into the local state.
 // If there is a reorg, it will reset the last stored block but not clear the internal state so
 // the state can be flushed to L1.
 func (l *BatchSubmitter) loadBlocksIntoState(ctx context.Context) error {
@@ -316,6 +325,7 @@ func (l *BatchSubmitter) loop() {
 	for {
 		select {
 		case <-ticker.C:
+			// refresh SystemConfig
 			if err := l.loadBlocksIntoState(l.shutdownCtx); errors.Is(err, ErrReorg) {
 				err := l.state.Close()
 				if err != nil {
@@ -413,11 +423,8 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		TxData:   data,
 		GasLimit: 0,
 	}
-	if l.Config.BatchInboxVersion == derive.BatchV2Type && l.Config.BatchInboxAbi != nil {
-		submit, exists := l.Config.BatchInboxAbi.Methods["submit"]
-		if exists {
-			candidate.MethodId = submit.ID
-		}
+	if l.Config.BatchInboxVersion == derive.BatchV2Type {
+		candidate.MethodId = l.submitMethodId
 		estimatedGas, err := l.estimateGas(ctx, candidate)
 		if err != nil {
 			l.log.Error("Failed to get gas estimate", "error", err)

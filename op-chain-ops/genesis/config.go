@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-chain-ops/immutables"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/state"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 )
 
@@ -204,6 +205,8 @@ type DeployConfig struct {
 	FundDevAccounts bool `json:"fundDevAccounts"`
 	// The maximum number of participants in the leader election.
 	LeaderElectionMaxParticipants uint64 `json:"leaderElectionMaxParticipants"`
+	// Batcher version at time of deployment
+	InitialBatcherVersion int `json:"initialBatcherVersion"`
 }
 
 // Copy will deeply copy the DeployConfig. This does a JSON roundtrip to copy
@@ -465,10 +468,11 @@ func (d *DeployConfig) RollupConfig(l1StartBlock *types.Block, l2GenesisBlockHas
 			},
 			L2Time: l1StartBlock.Time(),
 			SystemConfig: eth.SystemConfig{
-				BatcherAddr: d.BatchSenderAddress,
-				Overhead:    eth.Bytes32(common.BigToHash(new(big.Int).SetUint64(d.GasPriceOracleOverhead))),
-				Scalar:      eth.Bytes32(common.BigToHash(new(big.Int).SetUint64(d.GasPriceOracleScalar))),
-				GasLimit:    uint64(d.L2GenesisBlockGasLimit),
+				BatcherAddr:        d.BatchSenderAddress,
+				Overhead:           eth.Bytes32(common.BigToHash(new(big.Int).SetUint64(d.GasPriceOracleOverhead))),
+				Scalar:             eth.Bytes32(common.BigToHash(new(big.Int).SetUint64(d.GasPriceOracleScalar))),
+				GasLimit:           uint64(d.L2GenesisBlockGasLimit),
+				BatcherHashVersion: uint8(d.InitialBatcherVersion),
 			},
 		},
 		BlockTime:              d.L2BlockTime,
@@ -705,13 +709,21 @@ func NewL2StorageConfig(config *DeployConfig, block *types.Block) (state.Storage
 		"_initializing": false,
 		"messenger":     predeploys.L2CrossDomainMessengerAddr,
 	}
+	batcherHash := common.Hash{}
+	if config.InitialBatcherVersion == derive.BatchV1Type {
+		batcherHash = config.BatchSenderAddress.Hash()
+	} else if config.InitialBatcherVersion != derive.BatchV2Type {
+		return storage, errors.New("invalid batcher version")
+	}
+	batcherHash[0] = uint8(config.InitialBatcherVersion)
+
 	storage["L1Block"] = state.StorageValues{
 		"number":         block.Number(),
 		"timestamp":      block.Time(),
 		"basefee":        block.BaseFee(),
 		"hash":           block.Hash(),
 		"sequenceNumber": 0,
-		"batcherHash":    config.BatchSenderAddress.Hash(),
+		"batcherHash":    batcherHash,
 		"l1FeeOverhead":  config.GasPriceOracleOverhead,
 		"l1FeeScalar":    config.GasPriceOracleScalar,
 	}

@@ -57,5 +57,6 @@
 
   "leaderElectionMaxParticipants": 5,
 
-  "batchInboxContractAddress": "0xff00000000000000000000000000000000042069"
+  "batchInboxContractAddress": "0xff00000000000000000000000000000000042069",
+  "initialBatcherVersion": 0
 }

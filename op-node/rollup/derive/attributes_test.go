@@ -30,9 +30,10 @@ func TestPreparePayloadAttributes(t *testing.T) {
 	}
 
 	testSysCfg := eth.SystemConfig{
-		BatcherAddr: common.Address{42},
-		Overhead:    [32]byte{},
-		Scalar:      [32]byte{},
+		BatcherAddr:        common.Address{42},
+		Overhead:           [32]byte{},
+		Scalar:             [32]byte{},
+		BatcherHashVersion: uint8(0),
 	}
 
 	t.Run("inconsistent next height origin", func(t *testing.T) {
