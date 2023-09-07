@@ -15,8 +15,7 @@ import (
 
 func TestLeaderElection(t *testing.T) {
 	InitParallel(t)
-	require.Equal(t, 2000, 2000, "Values are different")
-
+	
 	cfg := DefaultSystemConfig(t)
 
 	sys, err := cfg.Start(t)
@@ -33,18 +32,18 @@ func TestLeaderElection(t *testing.T) {
 	require.Nil(t, err)
 
 	// Check that interacting with the contract fails with some hardcoded address
-	leaderElectionContractWrongAddressNew := common.BytesToAddress([]byte("0x"))
-	leaderElectionContractWrong, err := bindings.NewRoundRobinLeaderElection(leaderElectionContractWrongAddressNew, l1Client)
+	leaderElectionContractWrongAddress := common.BytesToAddress([]byte("0x"))
+	leaderElectionContractWrong, err := bindings.NewLeaderElectionBatchInbox(leaderElectionContractWrongAddress, l1Client)
 	require.Nil(t, err)
 	aliceAddress := sys.cfg.Secrets.Addresses().Alice
 	blockNumber := big.NewInt(0)
 	_, err = leaderElectionContractWrong.IsCurrentLeader(&bind.CallOpts{}, aliceAddress, blockNumber)
 	require.Error(t, err)
 
-	// Now with the contract address from sys.cfg we can interact with the contract
-	leaderElectionContractAddressNew := sys.cfg.L1Deployments.RoundRobinLeaderElection
-	log.Info("leaderElectionContractAddressNew: %s", leaderElectionContractAddressNew.String())
-	leaderElectionContractNew, err := bindings.NewRoundRobinLeaderElection(leaderElectionContractAddressNew, l1Client)
+	// Now with the address from sys.cfg we can interact with the contract
+	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
+	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
+	leaderElectionContractNew, err := bindings.NewLeaderElectionBatchInbox(leaderElectionContractAddress, l1Client)
 	require.Nil(t, err)
 
 	isLeader, err := leaderElectionContractNew.IsCurrentLeader(&bind.CallOpts{}, aliceAddress, blockNumber)
