@@ -15,7 +15,7 @@ import (
 
 func TestLeaderElection(t *testing.T) {
 	InitParallel(t)
-	
+
 	cfg := DefaultSystemConfig(t)
 
 	sys, err := cfg.Start(t)
