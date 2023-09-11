@@ -1,10 +1,12 @@
 package op_e2e
 
 import (
-	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -54,6 +56,33 @@ func TestLeaderElectionCall(t *testing.T) {
 
 }
 
+func addNewLeader(
+	t *testing.T,
+	timeout time.Duration,
+	l1Client *ethclient.Client,
+	address common.Address,
+	contract *bindings.LeaderElectionBatchInbox,
+	opts *bind.TransactOpts) {
+
+	tx, err := contract.AddParticipant(opts, address)
+	require.Nil(t, err)
+	require.Nil(t, err, "Adding participant")
+
+	receipt, err := waitForTransaction(tx.Hash(), l1Client, timeout)
+	require.Nil(t, err, "The transaction is sent")
+	require.Equal(t, receipt.Status, types.ReceiptStatusSuccessful, "transaction failed")
+}
+
+func checkIsLeader(
+	t *testing.T,
+	contract *bindings.LeaderElectionBatchInbox,
+	address common.Address,
+	blockNumber *big.Int) {
+	isLeader, err := contract.IsCurrentLeader(&bind.CallOpts{}, address, blockNumber)
+	require.Nil(t, err)
+	require.True(t, isLeader)
+}
+
 func TestLeaderElectionSetup(t *testing.T) {
 	InitParallel(t)
 
@@ -81,36 +110,26 @@ func TestLeaderElectionSetup(t *testing.T) {
 
 	aliceAddress := cfg.Secrets.Addresses().Alice
 
-	// Instantiante the Leader Election Batch Inbox contract
+	// Instantiate the Leader Election Batch Inbox contract
 	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
 	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
 	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(cfg.L1Deployments.RoundRobinLeaderElectionProxy, l1Client)
 	require.Nil(t, err)
 
-	// Add batcher
-	tx, err := leaderElectionContract.AddParticipant(opts, batcherAddress)
-	require.Nil(t, err)
-	require.Nil(t, err, "Adding participant")
-
 	timeout := 10 * time.Duration(cfg.DeployConfig.L1BlockTime) * time.Second
-	receipt, err := waitForTransaction(tx.Hash(), l1Client, timeout)
-	require.Nil(t, err, "The transaction is sent")
-	require.Equal(t, receipt.Status, types.ReceiptStatusSuccessful, "transaction failed")
+
+	// Add batcher
+	addNewLeader(t, timeout, l1Client, batcherAddress, leaderElectionContract, opts)
 
 	// Add Alice
-	tx, err = leaderElectionContract.AddParticipant(opts, aliceAddress)
-	require.Nil(t, err)
-	require.Nil(t, err, "Adding participant")
+	addNewLeader(t, timeout, l1Client, aliceAddress, leaderElectionContract, opts)
 
-	receipt, err = waitForTransaction(tx.Hash(), l1Client, timeout)
-	require.Nil(t, err, "The transaction is sent")
-	require.Equal(t, receipt.Status, types.ReceiptStatusSuccessful, "transaction failed")
+	// TODO repeat leader occurrences N times
 
-	blockNumber := big.NewInt(6)
-
-	// TODO repeat the occurrence of each batcher address N times
-	isLeader, err := leaderElectionContract.IsCurrentLeader(&bind.CallOpts{}, batcherAddress, blockNumber)
-	require.Nil(t, err)
-	require.True(t, isLeader)
+	// Check leader slots are correctly filled
+	checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(4))
+	checkIsLeader(t, leaderElectionContract, aliceAddress, big.NewInt(5))
+	checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(6))
+	checkIsLeader(t, leaderElectionContract, aliceAddress, big.NewInt(7))
 
 }
