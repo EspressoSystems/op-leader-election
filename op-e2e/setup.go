@@ -312,12 +312,9 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 func (sys *System) InitLeaderBatchInboxContract(t *testing.T) {
 	MaxNumberParticipants := int(sys.cfg.DeployConfig.LeaderElectionMaxParticipants)
 	for i := 0; i < MaxNumberParticipants; i++ {
-
-		// Add the address of the batcher in the leaders' list
 		batchSubmitterAddress := sys.BatchSubmitters[i].TxManager.From()
 		log.Info(batchSubmitterAddress.String())
 
-		// Add batcher
 		addNewLeader(t, sys, batchSubmitterAddress)
 	}
 }
