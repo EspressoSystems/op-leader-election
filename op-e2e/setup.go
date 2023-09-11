@@ -654,7 +654,26 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	}
 
 	// Batch Submitter
-	sys.BatchSubmitter, err = bss.NewBatchSubmitterFromCLIConfig(bss.CLIConfig{
+	secret := cfg.Secrets.Batcher
+	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup batch submitter: %w", err)
+	}
+
+	// Batcher may be enabled later
+	if !sys.cfg.DisableBatcher {
+		if err := sys.BatchSubmitter.Start(); err != nil {
+			return nil, fmt.Errorf("unable to start batch submitter: %w", err)
+		}
+	}
+
+	return sys, nil
+}
+
+func genNewBatchSubmitter(sys *System, cfg SystemConfig, secret *ecdsa.PrivateKey) (*bss.BatchSubmitter, error) {
+
+	newBatchSubmitter, err := bss.NewBatchSubmitterFromCLIConfig(bss.CLIConfig{
 		L1EthRpc:               sys.EthInstances["l1"].WSEndpoint(),
 		L2EthRpc:               sys.EthInstances["sequencer"].WSEndpoint(),
 		RollupRpc:              sys.RollupNodes["sequencer"].HTTPEndpoint(),
@@ -674,18 +693,8 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 			Format: "text",
 		},
 	}, sys.cfg.Loggers["batcher"], batchermetrics.NoopMetrics)
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup batch submitter: %w", err)
-	}
 
-	// Batcher may be enabled later
-	if !sys.cfg.DisableBatcher {
-		if err := sys.BatchSubmitter.Start(); err != nil {
-			return nil, fmt.Errorf("unable to start batch submitter: %w", err)
-		}
-	}
-
-	return sys, nil
+	return newBatchSubmitter, err
 }
 
 // IP6 range that gets blackholed (in case our traffic ever makes it out onto
