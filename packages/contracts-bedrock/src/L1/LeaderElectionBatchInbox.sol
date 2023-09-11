@@ -21,6 +21,10 @@ abstract contract LeaderElectionBatchInbox {
         uint16 numL2Blocks;
     }
 
+    /// @notice insert a new participant in the leaders' list
+    /// @param _addr address of the participant
+    function addParticipant(address _addr) virtual public;
+
     /// @notice Allows to submit a batch. This function checks that the caller is the leader for the current block.
     ///
     ///         Checking that the metadata matches the frames must be done in the derivation pipeline. If there is

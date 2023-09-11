@@ -31,7 +31,8 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
         creation_block_number = block.number;
     }
 
-    function addParticipant(address _addr) public onlyOwner {
+    // TODO readd onlyOwner?
+    function addParticipant(address _addr) public override {
         require(
             index_last_inserted_participant < max_number_participants,
             "RoundRobinLeaderElection: list of participants is full."

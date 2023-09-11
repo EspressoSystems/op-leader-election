@@ -39,7 +39,7 @@ type LeaderElectionBatchInboxMeta struct {
 
 // LeaderElectionBatchInboxMetaData contains all meta data concerning the LeaderElectionBatchInbox contract.
 var LeaderElectionBatchInboxMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes16\",\"name\":\"channelId\",\"type\":\"bytes16\"},{\"internalType\":\"uint16\",\"name\":\"frameNumber\",\"type\":\"uint16\"},{\"internalType\":\"uint32\",\"name\":\"frameDataLength\",\"type\":\"uint32\"},{\"internalType\":\"bool\",\"name\":\"isLast\",\"type\":\"bool\"},{\"internalType\":\"uint16\",\"name\":\"numL2Blocks\",\"type\":\"uint16\"}],\"internalType\":\"structLeaderElectionBatchInbox.Meta[]\",\"name\":\"_metas\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes\",\"name\":\"_frames\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"addParticipant\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes16\",\"name\":\"channelId\",\"type\":\"bytes16\"},{\"internalType\":\"uint16\",\"name\":\"frameNumber\",\"type\":\"uint16\"},{\"internalType\":\"uint32\",\"name\":\"frameDataLength\",\"type\":\"uint32\"},{\"internalType\":\"bool\",\"name\":\"isLast\",\"type\":\"bool\"},{\"internalType\":\"uint16\",\"name\":\"numL2Blocks\",\"type\":\"uint16\"}],\"internalType\":\"structLeaderElectionBatchInbox.Meta[]\",\"name\":\"_metas\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes\",\"name\":\"_frames\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // LeaderElectionBatchInboxABI is the input ABI used to generate the binding from.
@@ -249,6 +249,27 @@ func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) NextBlocksAsLe
 // Solidity: function nextBlocksAsLeader(address _leaderId, uint256 _blockNumber) view returns(uint8, bool[])
 func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxCallerSession) NextBlocksAsLeader(_leaderId common.Address, _blockNumber *big.Int) (uint8, []bool, error) {
 	return _LeaderElectionBatchInbox.Contract.NextBlocksAsLeader(&_LeaderElectionBatchInbox.CallOpts, _leaderId, _blockNumber)
+}
+
+// AddParticipant is a paid mutator transaction binding the contract method 0xdfafe10f.
+//
+// Solidity: function addParticipant(address _addr) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactor) AddParticipant(opts *bind.TransactOpts, _addr common.Address) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.contract.Transact(opts, "addParticipant", _addr)
+}
+
+// AddParticipant is a paid mutator transaction binding the contract method 0xdfafe10f.
+//
+// Solidity: function addParticipant(address _addr) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) AddParticipant(_addr common.Address) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.Contract.AddParticipant(&_LeaderElectionBatchInbox.TransactOpts, _addr)
+}
+
+// AddParticipant is a paid mutator transaction binding the contract method 0xdfafe10f.
+//
+// Solidity: function addParticipant(address _addr) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactorSession) AddParticipant(_addr common.Address) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.Contract.AddParticipant(&_LeaderElectionBatchInbox.TransactOpts, _addr)
 }
 
 // Submit is a paid mutator transaction binding the contract method 0xc2e41e5c.
