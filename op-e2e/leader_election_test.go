@@ -49,13 +49,13 @@ func TestLeaderElectionSetup(t *testing.T) {
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
 	sys.InitLeaderBatchInboxContract(t)
 
+	// Check that the leader slots are correctly filled
 	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionMaxParticipants)
+	blockNumberOfBatchInboxContractDeployment := 3
 
-	// TODO repeat leader occurrences N times
-	// Check leader slots are correctly filled
 	for i := 0; i < MaxNumberParticipants; i++ {
 		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
-		blockNumber := 3 + i // TODO where does 3 comes from?
+		blockNumber := blockNumberOfBatchInboxContractDeployment + i
 		checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
 	}
 }
