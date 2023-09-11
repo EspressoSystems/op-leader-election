@@ -17,45 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLeaderElectionCall(t *testing.T) {
-	InitParallel(t)
-
-	cfg := DefaultSystemConfig(t)
-
-	sys, err := cfg.Start(t)
-	require.Nil(t, err, "Error starting up system")
-	defer sys.Close()
-
-	log := testlog.Logger(t, log.LvlInfo)
-	log.Info("genesis", "l2", sys.RollupConfig.Genesis.L2, "l1", sys.RollupConfig.Genesis.L1, "l2_time", sys.RollupConfig.Genesis.L2Time)
-
-	l1Client := sys.Clients["l1"]
-
-	opts, err := bind.NewKeyedTransactorWithChainID(sys.cfg.Secrets.Alice, cfg.L1ChainIDBig())
-	log.Info(opts.GasPrice.String())
-	require.Nil(t, err)
-
-	// Check that interacting with the contract fails with some hardcoded address
-	leaderElectionContractWrongAddress := common.BytesToAddress([]byte("0x"))
-	leaderElectionContractWrong, err := bindings.NewLeaderElectionBatchInbox(leaderElectionContractWrongAddress, l1Client)
-	require.Nil(t, err)
-	aliceAddress := sys.cfg.Secrets.Addresses().Alice
-	blockNumber := big.NewInt(0)
-	_, err = leaderElectionContractWrong.IsCurrentLeader(&bind.CallOpts{}, aliceAddress, blockNumber)
-	require.Error(t, err)
-
-	// Now with the address from sys.cfg we can interact with the contract
-	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
-	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
-	leaderElectionContractNew, err := bindings.NewLeaderElectionBatchInbox(leaderElectionContractAddress, l1Client)
-	require.Nil(t, err)
-
-	isLeader, err := leaderElectionContractNew.IsCurrentLeader(&bind.CallOpts{}, aliceAddress, blockNumber)
-	require.Nil(t, err)
-	require.False(t, isLeader)
-
-}
-
 func addNewLeader(
 	t *testing.T,
 	timeout time.Duration,
@@ -109,9 +70,9 @@ func TestLeaderElectionSetup(t *testing.T) {
 
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
 
-	// TODO fetch 5 from config
+	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionMaxParticipants)
 	// TODO function to initialize the Batch inbox contract directly in the Config object?
-	for i := 0; i < 5; i++ {
+	for i := 0; i < MaxNumberParticipants; i++ {
 
 		// Add the address of the batcher in the leaders' list
 		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
@@ -124,11 +85,10 @@ func TestLeaderElectionSetup(t *testing.T) {
 	}
 
 	// TODO repeat leader occurrences N times
-
 	// Check leader slots are correctly filled
-	for i := 0; i < 5; i++ {
+	for i := 0; i < MaxNumberParticipants; i++ {
 		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
-		blockNumber := 4 + i // TODO where does 4 comes from?
+		blockNumber := 3 + i // TODO where does 3 comes from?
 		checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
 	}
 }

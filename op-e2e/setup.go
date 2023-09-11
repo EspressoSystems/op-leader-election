@@ -658,8 +658,9 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	// Batch Submitter
 	secret := cfg.Secrets.Batcher
 	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret)
-	// TODO fetch 5 from config
-	for i := 0; i < 5; i++ {
+
+	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionMaxParticipants)
+	for i := 0; i < MaxNumberParticipants; i++ {
 		priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup batch submitters: %w", err)
