@@ -1,14 +1,9 @@
 package op_e2e
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"testing"
-	"time"
-
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
-
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
@@ -16,23 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/stretchr/testify/require"
 )
-
-func addNewLeader(
-	t *testing.T,
-	timeout time.Duration,
-	l1Client *ethclient.Client,
-	address common.Address,
-	contract *bindings.LeaderElectionBatchInbox,
-	opts *bind.TransactOpts) {
-
-	tx, err := contract.AddParticipant(opts, address)
-	require.Nil(t, err)
-	require.Nil(t, err, "Adding participant")
-
-	receipt, err := waitForTransaction(tx.Hash(), l1Client, timeout)
-	require.Nil(t, err, "The transaction is sent")
-	require.Equal(t, receipt.Status, types.ReceiptStatusSuccessful, "transaction failed")
-}
 
 func checkIsLeader(
 	t *testing.T,
@@ -69,20 +47,9 @@ func TestLeaderElectionSetup(t *testing.T) {
 	require.Nil(t, err)
 
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
+	sys.InitLeaderBatchInboxContract(t)
 
 	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionMaxParticipants)
-	// TODO function to initialize the Batch inbox contract directly in the Config object?
-	for i := 0; i < MaxNumberParticipants; i++ {
-
-		// Add the address of the batcher in the leaders' list
-		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
-		log.Info(batcherAddress.String())
-
-		timeout := 10 * time.Duration(cfg.DeployConfig.L1BlockTime) * time.Second
-
-		// Add batcher
-		addNewLeader(t, timeout, l1Client, batcherAddress, leaderElectionContract, opts)
-	}
 
 	// TODO repeat leader occurrences N times
 	// Check leader slots are correctly filled

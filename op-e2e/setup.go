@@ -6,6 +6,9 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
+	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"net"
 	"os"
@@ -282,6 +285,43 @@ func (sys *System) Close() {
 	sys.Mocknet.Close()
 }
 
+// / Helper function for adding an address to a leader slot of the Leader Election Batch Inbox contract
+func addNewLeader(t *testing.T, sys *System, address common.Address) {
+
+	opts, err := bind.NewKeyedTransactorWithChainID(sys.cfg.Secrets.Alice, sys.cfg.L1ChainIDBig())
+	log.Info(opts.GasPrice.String())
+	require.Nil(t, err)
+
+	l1Client := sys.Clients["l1"]
+	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
+	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
+	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(sys.cfg.L1Deployments.RoundRobinLeaderElectionProxy, l1Client)
+	require.Nil(t, err, "Could not connect to the Leader Election Batch Inbox contract.")
+
+	timeout := 10 * time.Duration(sys.cfg.DeployConfig.L1BlockTime) * time.Second
+	tx, err := leaderElectionContract.AddParticipant(opts, address)
+	require.Nil(t, err)
+	require.Nil(t, err, "Adding participant")
+
+	receipt, err := waitForTransaction(tx.Hash(), l1Client, timeout)
+	require.Nil(t, err, "The transaction is sent")
+	require.Equal(t, receipt.Status, types.ReceiptStatusSuccessful, "transaction failed")
+}
+
+// InitLeaderBatchInboxContract /  Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
+func (sys *System) InitLeaderBatchInboxContract(t *testing.T) {
+	MaxNumberParticipants := int(sys.cfg.DeployConfig.LeaderElectionMaxParticipants)
+	for i := 0; i < MaxNumberParticipants; i++ {
+
+		// Add the address of the batcher in the leaders' list
+		batchSubmitterAddress := sys.BatchSubmitters[i].TxManager.From()
+		log.Info(batchSubmitterAddress.String())
+
+		// Add batcher
+		addNewLeader(t, sys, batchSubmitterAddress)
+	}
+}
+
 type systemConfigHook func(sCfg *SystemConfig, s *System)
 
 type SystemConfigOption struct {
@@ -311,6 +351,10 @@ func NewSystemConfigOptions(_opts []SystemConfigOption) (SystemConfigOptions, er
 func (s *SystemConfigOptions) Get(key, role string) (systemConfigHook, bool) {
 	v, ok := s.opts[key+":"+role]
 	return v, ok
+}
+
+func (cfg SystemConfig) InitializeLeaderElectionInboxContract(t *testing.T) {
+
 }
 
 func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*System, error) {
