@@ -3,6 +3,7 @@ package op_e2e
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -247,6 +248,7 @@ type System struct {
 	RollupNodes       map[string]*rollupNode.OpNode
 	L2OutputSubmitter *l2os.L2OutputSubmitter
 	BatchSubmitter    *bss.BatchSubmitter
+	BatchSubmitters   []*bss.BatchSubmitter
 	Mocknet           mocknet.Mocknet
 
 	// TimeTravelClock is nil unless SystemConfig.SupportL1TimeTravel was set to true
@@ -656,6 +658,19 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	// Batch Submitter
 	secret := cfg.Secrets.Batcher
 	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret)
+	// TODO fetch 5 from config
+	for i := 0; i < 5; i++ {
+		priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to setup batch submitters: %w", err)
+		}
+		newBatchSubmitter, err := genNewBatchSubmitter(sys, cfg, priv)
+		if err != nil {
+			return nil, fmt.Errorf("failed to setup batch submitters: %w", err)
+		}
+		sys.BatchSubmitters = append(sys.BatchSubmitters, newBatchSubmitter)
+
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup batch submitter: %w", err)
@@ -687,7 +702,7 @@ func genNewBatchSubmitter(sys *System, cfg SystemConfig, secret *ecdsa.PrivateKe
 		},
 		SubSafetyMargin: 4,
 		PollInterval:    50 * time.Millisecond,
-		TxMgrConfig:     newTxMgrConfig(sys.EthInstances["l1"].WSEndpoint(), cfg.Secrets.Batcher),
+		TxMgrConfig:     newTxMgrConfig(sys.EthInstances["l1"].WSEndpoint(), secret),
 		LogConfig: oplog.CLIConfig{
 			Level:  "info",
 			Format: "text",

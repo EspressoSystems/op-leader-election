@@ -101,35 +101,34 @@ func TestLeaderElectionSetup(t *testing.T) {
 
 	l1Client := sys.Clients["l1"]
 
-	// Initialize the batchers
-	// TODO Should this be done in the config? probably yes. Be should be carefully of not breaking things
-
-	// Add the address of the batcher in the leaders' list
-	batcherAddress := cfg.Secrets.Addresses().Batcher
-	log.Info(batcherAddress.String())
-
-	aliceAddress := cfg.Secrets.Addresses().Alice
-
 	// Instantiate the Leader Election Batch Inbox contract
 	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
 	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
 	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(cfg.L1Deployments.RoundRobinLeaderElectionProxy, l1Client)
 	require.Nil(t, err)
 
-	timeout := 10 * time.Duration(cfg.DeployConfig.L1BlockTime) * time.Second
+	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
 
-	// Add batcher
-	addNewLeader(t, timeout, l1Client, batcherAddress, leaderElectionContract, opts)
+	// TODO fetch 5 from config
+	// TODO function to initialize the Batch inbox contract directly in the Config object?
+	for i := 0; i < 5; i++ {
 
-	// Add Alice
-	addNewLeader(t, timeout, l1Client, aliceAddress, leaderElectionContract, opts)
+		// Add the address of the batcher in the leaders' list
+		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
+		log.Info(batcherAddress.String())
+
+		timeout := 10 * time.Duration(cfg.DeployConfig.L1BlockTime) * time.Second
+
+		// Add batcher
+		addNewLeader(t, timeout, l1Client, batcherAddress, leaderElectionContract, opts)
+	}
 
 	// TODO repeat leader occurrences N times
 
 	// Check leader slots are correctly filled
-	checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(4))
-	checkIsLeader(t, leaderElectionContract, aliceAddress, big.NewInt(5))
-	checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(6))
-	checkIsLeader(t, leaderElectionContract, aliceAddress, big.NewInt(7))
-
+	for i := 0; i < 5; i++ {
+		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
+		blockNumber := 4 + i // TODO where does 4 comes from?
+		checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
+	}
 }
