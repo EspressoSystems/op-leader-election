@@ -69,5 +69,6 @@
   "faultGameMaxDepth": 63,
   "faultGameMaxDuration": 604800,
   "systemConfigStartBlock": 0,
-  "leaderElectionMaxParticipants": 5
+  "leaderElectionNumberOfLeaders": 3,
+  "leaderElectionNumberOfSlotsPerLeader":4
 }

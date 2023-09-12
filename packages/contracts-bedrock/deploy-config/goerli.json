@@ -39,6 +39,6 @@
   "eip1559Denominator": 50,
   "eip1559Elasticity": 10,
   "systemConfigStartBlock": 8300214,
-  "leaderElectionMaxParticipants": 0,
+  "leaderElectionNumberOfLeaders": 0,
   "batchInboxContractAddress": "0xff00000000000000000000000000000000000420"
 }

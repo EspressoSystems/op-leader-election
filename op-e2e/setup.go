@@ -6,9 +6,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
-	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"net"
 	"os"
@@ -17,6 +14,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum-optimism/optimism/op-node/p2p/store"
 	"github.com/ethereum-optimism/optimism/op-service/clock"
@@ -310,12 +311,15 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 
 // InitLeaderBatchInboxContract /  Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
 func (sys *System) InitLeaderBatchInboxContract(t *testing.T) {
-	MaxNumberParticipants := int(sys.cfg.DeployConfig.LeaderElectionMaxParticipants)
-	for i := 0; i < MaxNumberParticipants; i++ {
+
+	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	NumberOfSlotsPerLeader := int(sys.cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
+	for i := 0; i < NumberOfLeaders; i++ {
 		batchSubmitterAddress := sys.BatchSubmitters[i].TxManager.From()
 		log.Info(batchSubmitterAddress.String())
-
-		addNewLeader(t, sys, batchSubmitterAddress)
+		for j := 0; j < NumberOfSlotsPerLeader; j++ {
+			addNewLeader(t, sys, batchSubmitterAddress)
+		}
 	}
 }
 
@@ -700,7 +704,7 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	secret := cfg.Secrets.Batcher
 	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret)
 
-	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionMaxParticipants)
+	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	for i := 0; i < MaxNumberParticipants; i++ {
 		priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {

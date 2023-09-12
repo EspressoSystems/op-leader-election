@@ -202,8 +202,10 @@ type DeployConfig struct {
 	// FundDevAccounts configures whether or not to fund the dev accounts. Should only be used
 	// during devnet deployments.
 	FundDevAccounts bool `json:"fundDevAccounts"`
-	// The maximum number of participants in the leader election.
-	LeaderElectionMaxParticipants uint64 `json:"leaderElectionMaxParticipants"`
+	// The maximum number of leaders in the leader election.
+	LeaderElectionNumberOfLeaders uint64 `json:"leaderElectionNumberOfLeaders"`
+	// The number of consecutive slots assigned to each leader
+	LeaderElectionNumberOfSlotsPerLeader uint64 `json:"leaderElectionNumberOfSlotsPerLeader"`
 }
 
 // Copy will deeply copy the DeployConfig. This does a JSON roundtrip to copy

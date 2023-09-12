@@ -1,9 +1,10 @@
 package op_e2e
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
@@ -50,12 +51,15 @@ func TestLeaderElectionSetup(t *testing.T) {
 	sys.InitLeaderBatchInboxContract(t)
 
 	// Check that the leader slots are correctly filled
-	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionMaxParticipants)
+	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
 	blockNumberOfBatchInboxContractDeployment := 3
 
-	for i := 0; i < MaxNumberParticipants; i++ {
+	for i := 0; i < NumberOfLeaders; i++ {
 		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
-		blockNumber := blockNumberOfBatchInboxContractDeployment + i
-		checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
+		for j := 0; j < NumberOfSlotsPerLeader; j++ {
+			blockNumber := blockNumberOfBatchInboxContractDeployment + i*NumberOfSlotsPerLeader + j
+			checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
+		}
 	}
 }
