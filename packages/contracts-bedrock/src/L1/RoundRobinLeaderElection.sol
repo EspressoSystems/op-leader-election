@@ -30,7 +30,8 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
         creation_block_number = block.number;
     }
 
-    // TODO for production purposes it might be desirable to make this function "onlyOwner". However the tests would be harder to write
+    // TODO for production purposes it might be desirable to make this function "onlyOwner". However the tests would be
+    // harder to write
     function addParticipant(address _addr) public override {
         require(
             index_last_inserted_participant < max_number_participants,
