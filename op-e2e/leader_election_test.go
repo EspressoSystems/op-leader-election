@@ -53,12 +53,14 @@ func TestLeaderElectionSetup(t *testing.T) {
 	// Check that the leader slots are correctly filled
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
-	blockNumberOfBatchInboxContractDeployment := 4
+	blockNumberOfBatchInboxContractDeployment, err := leaderElectionContract.CreationBlockNumber(&bind.CallOpts{})
+	require.Nil(t, err)
+	blockNumberOfBatchInboxContractDeploymentInt := int(blockNumberOfBatchInboxContractDeployment.Int64())
 
 	for i := 0; i < NumberOfLeaders; i++ {
 		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
 		for j := 0; j < NumberOfSlotsPerLeader; j++ {
-			blockNumber := blockNumberOfBatchInboxContractDeployment + i*NumberOfSlotsPerLeader + j
+			blockNumber := blockNumberOfBatchInboxContractDeploymentInt + i*NumberOfSlotsPerLeader + j
 			checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
 		}
 	}
