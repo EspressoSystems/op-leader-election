@@ -38,10 +38,11 @@ func LoadOPStackRollupConfig(chainID uint64) (*Config, error) {
 	var genesisSysConfig eth.SystemConfig
 	if sysCfg, ok := superchain.GenesisSystemConfigs[chainID]; ok {
 		genesisSysConfig = eth.SystemConfig{
-			BatcherAddr: common.Address(sysCfg.BatcherAddr),
-			Overhead:    eth.Bytes32(sysCfg.Overhead),
-			Scalar:      eth.Bytes32(sysCfg.Scalar),
-			GasLimit:    sysCfg.GasLimit,
+			BatcherAddr:        common.Address(sysCfg.BatcherAddr),
+			Overhead:           eth.Bytes32(sysCfg.Overhead),
+			Scalar:             eth.Bytes32(sysCfg.Scalar),
+			GasLimit:           sysCfg.GasLimit,
+			BatcherHashVersion: 0,
 		}
 	} else {
 		return nil, fmt.Errorf("unable to retrieve genesis SystemConfig of chain %d", chainID)

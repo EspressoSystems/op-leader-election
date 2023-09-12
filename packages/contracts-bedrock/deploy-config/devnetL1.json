@@ -49,5 +49,6 @@
   "faultGameMaxDuration": 300,
   "systemConfigStartBlock": 0,
   "leaderElectionNumberOfLeaders": 3,
-  "leaderElectionNumberOfSlotsPerLeader":4
+  "leaderElectionNumberOfSlotsPerLeader":4,
+  "initialBatcherVersion": 0
 }

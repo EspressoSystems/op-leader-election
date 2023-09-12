@@ -5,6 +5,9 @@ pragma solidity ^0.8.0;
 /// @notice Interface for implementing a leader election scheme
 
 abstract contract LeaderElectionBatchInbox {
+
+    uint256 public creation_block_number;
+
     enum LeaderStatusFlags {
         Scheduled,
         Unscheduled,

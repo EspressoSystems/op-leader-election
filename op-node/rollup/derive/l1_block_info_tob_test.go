@@ -65,10 +65,11 @@ func FuzzDecodeDepositTxDataToL1Info(f *testing.F) {
 		}
 
 		sysCfg := eth.SystemConfig{
-			BatcherAddr: res.BatcherAddr,
-			Overhead:    res.L1FeeOverhead,
-			Scalar:      res.L1FeeScalar,
-			GasLimit:    uint64(0),
+			BatcherAddr:        res.BatcherAddr,
+			Overhead:           res.L1FeeOverhead,
+			Scalar:             res.L1FeeScalar,
+			GasLimit:           uint64(0),
+			BatcherHashVersion: res.BatcherVersion,
 		}
 
 		depTx, err := L1InfoDeposit(res.SequenceNumber, &l1Info, sysCfg, false)

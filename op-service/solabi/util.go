@@ -156,3 +156,16 @@ func WriteUint64(w io.Writer, n uint64) error {
 	}
 	return nil
 }
+
+func WriteBatcherVersionAndAddr(w io.Writer, v uint8, a common.Address) error {
+	if err := binary.Write(w, binary.BigEndian, v); err != nil {
+		return err
+	}
+	if _, err := w.Write(batcherHashEmptyPadding[:]); err != nil {
+		return err
+	}
+	if _, err := w.Write(a[:]); err != nil {
+		return err
+	}
+	return nil
+}

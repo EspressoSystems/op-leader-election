@@ -12,7 +12,6 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
     // @notice The number of leader slots that can be checked in advance
     uint8 public constant HORIZON = 10;
 
-    uint256 public creation_block_number;
     uint256 public max_number_participants;
     uint32 index_last_inserted_participant;
     mapping(uint256 => address) public participants;
@@ -31,7 +30,7 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
         creation_block_number = block.number;
     }
 
-    // TODO readd onlyOwner?
+    // TODO for production purposes it might be desirable to make this function "onlyOwner". However the tests would be harder to write
     function addParticipant(address _addr) public override {
         require(
             index_last_inserted_participant < max_number_participants,
