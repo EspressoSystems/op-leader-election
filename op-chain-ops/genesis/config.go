@@ -207,6 +207,7 @@ type DeployConfig struct {
 	LeaderElectionNumberOfLeaders uint64 `json:"leaderElectionNumberOfLeaders"`
 	// The number of consecutive slots assigned to each leader
 	LeaderElectionNumberOfSlotsPerLeader uint64 `json:"leaderElectionNumberOfSlotsPerLeader"`
+	// Batcher version at time of deployment
 	InitialBatcherVersion                int    `json:"initialBatcherVersion"`
 }
 
