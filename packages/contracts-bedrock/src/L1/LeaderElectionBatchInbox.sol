@@ -34,7 +34,7 @@ abstract contract LeaderElectionBatchInbox {
     function submit(Meta[] memory _metas, bytes calldata _frames) external {
         // TODO: pass metadata to isCurrentLeader
         bool isLeader = this.isCurrentLeader(msg.sender, block.number);
-        require(isLeader, "RoundRobinLeaderElection: submit function must be called by the leader.");
+        require(isLeader, "LeaderElectionBatchInbox: submit function must be called by the leader.");
     }
 
     /// @notice tells if some participant is the leader w.r.t a L1 block number.

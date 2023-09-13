@@ -16,6 +16,7 @@ var (
 	ErrInvalidChannelTimeout = errors.New("channel timeout is less than the safety margin")
 	ErrMaxFrameIndex         = errors.New("max frame index reached (uint16)")
 	ErrMaxDurationReached    = errors.New("max channel duration reached")
+	ErrLeaderSlotWillClose   = errors.New("batcher will no longer be leader")
 	ErrChannelTimeoutClose   = errors.New("close to channel timeout")
 	ErrSeqWindowClose        = errors.New("close to sequencer window timeout")
 	ErrTerminated            = errors.New("channel terminated")
@@ -254,6 +255,22 @@ func (c *channelBuilder) updateDurationTimeout(l1BlockNum uint64) {
 func (c *channelBuilder) updateSwTimeout(batch *derive.BatchData) {
 	timeout := uint64(batch.EpochNum) + c.cfg.SeqWindowSize - c.cfg.SubSafetyMargin
 	c.updateTimeout(timeout, ErrSeqWindowClose)
+}
+
+// updateLeaderTimeout updates the block timeout with the final block for this
+// batcher in the current leader election contract. This assumes this batcher
+// is currently the leader, based on the l1BlockNum. The timeout is only moved
+// forward if the derived timeout is earlier than the currently set timeout.
+//
+// It does nothing if the max channel duration is set to 0.
+func (c *channelBuilder) updateLeaderTimeout(lastL1Block uint64) {
+	// maybe this should be something similar to
+	// `c.updateTimeout(lastL1Block - c.cfg.SubSafetyMargin, ErrLeaderSlotWillClose)`
+	// We need to figure out what reasonable leader durations look like. I think we
+	// should have something that looks like the current epoch, with a safety margin
+	// based on being sufficiently confident that Close will be seen while
+	// isCurrentLeader still returns true. I suspect our Horizon of 10 is too small.
+	c.updateTimeout(lastL1Block, ErrLeaderSlotWillClose)
 }
 
 // updateTimeout updates the timeout block to the given block number if it is
