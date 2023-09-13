@@ -774,13 +774,13 @@ contract Deploy is Deployer {
         ProxyAdmin proxyAdmin = ProxyAdmin(mustGetAddress("ProxyAdmin"));
         address batchInboxProxy = mustGetAddress("RoundRobinLeaderElectionProxy");
         address batchInbox = mustGetAddress("RoundRobinLeaderElection");
-        uint256 maxNumberOfParticipants =
-            cfg.leaderElectionNumberOfLeaders() * cfg.leaderElectionNumberOfSlotsPerLeader();
+        uint256 maxNumberOfParticipants = cfg.leaderElectionNumberOfLeaders();
+        uint256 numberOfSlotsPerLeader = cfg.leaderElectionNumberOfSlotsPerLeader();
 
         proxyAdmin.upgradeAndCall({
             _proxy: payable(batchInboxProxy),
             _implementation: batchInbox,
-            _data: abi.encodeCall(RoundRobinLeaderElection.initialize, (cfg.finalSystemOwner(), maxNumberOfParticipants))
+            _data: abi.encodeCall(RoundRobinLeaderElection.initialize, (cfg.finalSystemOwner(), maxNumberOfParticipants, numberOfSlotsPerLeader))
         });
 
         RoundRobinLeaderElection inbox = RoundRobinLeaderElection(payable(batchInboxProxy));

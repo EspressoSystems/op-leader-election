@@ -8,7 +8,8 @@ import { LeaderElectionBatchInbox } from "../src/L1/LeaderElectionBatchInbox.sol
 
 contract RoundRobinLeaderElectionTest is Test {
     RoundRobinLeaderElection leaderContract;
-    uint256 public constant N_PARTICIPANTS = 5;
+    uint256 public constant N_PARTICIPANTS = 4;
+    uint256 public constant N_SLOTS_PER_LEADER = 3;
     uint256 DEPLOYMENT_BLOCK_NUMBER = 100;
     address owner = address(0xbeef);
 
@@ -19,7 +20,7 @@ contract RoundRobinLeaderElectionTest is Test {
         RoundRobinLeaderElection leaderImpl = new RoundRobinLeaderElection();
 
         vm.prank(msg.sender);
-        proxy.upgradeToAndCall(address(leaderImpl), abi.encodeCall(leaderImpl.initialize, (owner, N_PARTICIPANTS)));
+        proxy.upgradeToAndCall(address(leaderImpl), abi.encodeCall(leaderImpl.initialize, (owner, N_PARTICIPANTS, N_SLOTS_PER_LEADER)));
 
         leaderContract = RoundRobinLeaderElection(address(proxy));
 
@@ -29,6 +30,7 @@ contract RoundRobinLeaderElectionTest is Test {
             address addr = vm.addr(i);
             leaderContract.addParticipant(addr);
         }
+        assertEq(N_PARTICIPANTS*N_SLOTS_PER_LEADER,leaderContract.horizon());
     }
 
     function test_addParticipant_participantsAreAdded_success() external {
@@ -54,8 +56,14 @@ contract RoundRobinLeaderElectionTest is Test {
         }
 
         // When the contract is deployed the leader is the first participant
-        assertTrue(leaderContract.isCurrentLeader(vm.addr(1), DEPLOYMENT_BLOCK_NUMBER));
-        assertTrue(leaderContract.isCurrentLeader(vm.addr(2), DEPLOYMENT_BLOCK_NUMBER + 1));
+        for (uint i=0;i<N_PARTICIPANTS;i++){
+            for (uint j=0;j<N_SLOTS_PER_LEADER;j++){
+                uint blockNumber = DEPLOYMENT_BLOCK_NUMBER + i*N_SLOTS_PER_LEADER + j;
+                assertTrue(leaderContract.isCurrentLeader(vm.addr(i+1), blockNumber));
+                blockNumber = DEPLOYMENT_BLOCK_NUMBER + 3*leaderContract.horizon() + i*N_SLOTS_PER_LEADER + j;
+                assertTrue(leaderContract.isCurrentLeader(vm.addr(i+1), blockNumber));
+            }
+        }
     }
 
     function test_submit_batch_success() external {
@@ -86,22 +94,28 @@ contract RoundRobinLeaderElectionTest is Test {
         // Happy case for first leader
         blockNumber = DEPLOYMENT_BLOCK_NUMBER;
         address leader = vm.addr(1);
+        assertTrue(leaderContract.is_participant(leader));
 
         (flag, bitmap) = leaderContract.nextBlocksAsLeader(leader, blockNumber);
         assertTrue(flag == LeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
+
+        assertEq(bitmap.length, leaderContract.horizon());
+
         assertEq(
             abi.encodePacked(bitmap),
-            abi.encodePacked([true, false, false, false, false, true, false, false, false, false])
+            abi.encodePacked([true, true, true, false, false, false, false, false, false, false, false, false])
         );
+
 
         // Happy case for third leader
         leader = vm.addr(3);
-
+        blockNumber = DEPLOYMENT_BLOCK_NUMBER + 3;
         assertTrue(flag == LeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
         (flag, bitmap) = leaderContract.nextBlocksAsLeader(leader, blockNumber);
         assertEq(
             abi.encodePacked(bitmap),
-            abi.encodePacked([false, false, true, false, false, false, false, true, false, false])
+            abi.encodePacked([false, false, false, true, true, true, false, false, false, false, false, false])
         );
     }
 }
+
