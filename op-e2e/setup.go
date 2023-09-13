@@ -301,7 +301,6 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 
 	timeout := 10 * time.Duration(sys.cfg.DeployConfig.L1BlockTime) * time.Second
 	tx, err := leaderElectionContract.AddParticipant(opts, address)
-	require.Nil(t, err)
 	require.Nil(t, err, "Adding participant")
 
 	receipt, err := waitForTransaction(tx.Hash(), l1Client, timeout)
