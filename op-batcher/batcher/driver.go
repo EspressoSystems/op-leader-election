@@ -352,6 +352,10 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherStatus() (bool, error) {
 		return false, err
 	}
 	isCurrentLeader, err := lebi.IsCurrentLeader(&bind.CallOpts{Context: l.shutdownCtx}, l.TxManager.From(), big.NewInt(int64(l1tip.Number+1)))
+	if err != nil {
+		l.log.Error("Failed in eth_call to isCurrentLeader", "error", err)
+		return false, err
+	}
 	if !isCurrentLeader {
 		l.isLeader = false
 		return false, nil
@@ -359,9 +363,11 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherStatus() (bool, error) {
 	l.isLeader = true
 
 	_, leaderSpan, err := lebi.NextBlocksAsLeader(&bind.CallOpts{Context: l.shutdownCtx}, l.TxManager.From(), big.NewInt(int64(l1tip.Number+1)))
-	i := 0
-	b := true
-	for i, b = range leaderSpan {
+	if err != nil {
+		l.log.Error("Failed in eth_call to nextBlocksAsLeader", "error", err)
+		return false, err
+	}
+	for i, b := range leaderSpan {
 		if !b {
 			if i == 0 {
 				l.state.setLastLeaderBlock(l1tip.Number + 1)
