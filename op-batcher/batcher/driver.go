@@ -320,9 +320,6 @@ func (l *BatchSubmitter) calculateL2BlockRangeToStore(ctx context.Context) (eth.
 // Missed L2 block somehow.
 
 func (l *BatchSubmitter) checkLeaderElectionBatcherStatus() (bool, error) {
-	if l.Config.BatchInboxVersion == derive.BatchV1Type {
-		return true, nil
-	}
 	// check if L1Block has changed
 	l1tip, err := l.l1Tip(l.shutdownCtx)
 	if err != nil {
@@ -332,6 +329,23 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherStatus() (bool, error) {
 	if l.lastL1Tip == l1tip {
 		return l.isLeader, nil
 	}
+
+	sysConf, err := bindings.NewSystemConfigCaller(l.Rollup.L1SystemConfigAddress, l.L1Client)
+	if err == nil {
+		batcherHash, err := sysConf.BatcherHash(&bind.CallOpts{BlockNumber: big.NewInt(int64(l1tip.Number)), Context: l.shutdownCtx})
+		if err == nil {
+			if batcherHash[0] == derive.BatchV1Type {
+				l.Config.BatchInboxVersion = derive.BatchV1Type
+			} else if batcherHash[0] == derive.BatchV2Type {
+				l.Config.BatchInboxVersion = derive.BatchV2Type
+			}
+		}
+	}
+
+	if l.Config.BatchInboxVersion == derive.BatchV1Type {
+		return true, nil
+	}
+
 	lebi, err := bindings.NewLeaderElectionBatchInboxCaller(l.Rollup.BatchInboxContractAddr, l.L1Client)
 	if err != nil {
 		l.log.Error("Failed to set up binding to Batch Inbox Contract", "error", err)
