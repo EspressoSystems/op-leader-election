@@ -208,7 +208,7 @@ type DeployConfig struct {
 	// The number of consecutive slots assigned to each leader
 	LeaderElectionNumberOfSlotsPerLeader uint64 `json:"leaderElectionNumberOfSlotsPerLeader"`
 	// Batcher version at time of deployment
-	InitialBatcherVersion                int    `json:"initialBatcherVersion"`
+	InitialBatcherVersion int `json:"initialBatcherVersion"`
 }
 
 // Copy will deeply copy the DeployConfig. This does a JSON roundtrip to copy

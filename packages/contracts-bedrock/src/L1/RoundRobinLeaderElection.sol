@@ -31,7 +31,7 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
     }
 
     // TODO for production purposes it might be desirable to make this function "onlyOwner". However the tests would be
-    // harder to write
+    // harder to write. See ticket https://github.com/EspressoSystems/op-leader-election/issues/73
     function addParticipant(address _addr) public override {
         require(
             index_last_inserted_participant < max_number_participants,
