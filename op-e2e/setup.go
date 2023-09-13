@@ -308,7 +308,7 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 	require.Equal(t, receipt.Status, types.ReceiptStatusSuccessful, "transaction failed")
 }
 
-// InitLeaderBatchInboxContract /  Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
+// Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
 func (sys *System) InitLeaderBatchInboxContract(t *testing.T) {
 
 	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
