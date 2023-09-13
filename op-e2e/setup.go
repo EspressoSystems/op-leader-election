@@ -353,10 +353,6 @@ func (s *SystemConfigOptions) Get(key, role string) (systemConfigHook, bool) {
 	return v, ok
 }
 
-func (cfg SystemConfig) InitializeLeaderElectionInboxContract(t *testing.T) {
-
-}
-
 func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*System, error) {
 	opts, err := NewSystemConfigOptions(_opts)
 	if err != nil {
