@@ -20,10 +20,17 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
     // TODO No need to be public, just for testing purposes. Do this more cleanly
 
     constructor() Semver(0, 1, 0) {
-        initialize({ _owner: address(0xdEaD), _max_number_participants: 0, _number_of_slots_per_leader : 0 });
+        initialize({ _owner: address(0xdEaD), _max_number_participants: 0, _number_of_slots_per_leader: 0 });
     }
 
-    function initialize(address _owner, uint256 _max_number_participants, uint256 _number_of_slots_per_leader) public reinitializer(2) {
+    function initialize(
+        address _owner,
+        uint256 _max_number_participants,
+        uint256 _number_of_slots_per_leader
+    )
+        public
+        reinitializer(2)
+    {
         __Ownable_init();
         transferOwnership(_owner);
 
@@ -52,7 +59,8 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
             return false;
         } else {
             uint32 number_participants = index_last_inserted_participant;
-            uint256 range_from_creation = (_blockNumber - creation_block_number) % (number_participants* number_of_slots_per_leader);
+            uint256 range_from_creation =
+                (_blockNumber - creation_block_number) % (number_participants * number_of_slots_per_leader);
             uint256 index_leader = range_from_creation / number_of_slots_per_leader;
             return participants[index_leader] == _leaderId;
         }
