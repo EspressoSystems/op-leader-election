@@ -73,7 +73,7 @@ cannon:
 
 cannon-prestate: op-program cannon
 	./cannon/bin/cannon load-elf --path op-program/bin/op-program-client.elf --out op-program/bin/prestate.json --meta op-program/bin/meta.json
-	./cannon/bin/cannon run --proof-at '=0' --stop-at '=1' --input op-program/bin/prestate.json --meta op-program/bin/meta.json --proof-fmt 'op-program/bin/%d.json' --output /dev/null
+	./cannon/bin/cannon run --proof-at '=0' --stop-at '=1' --input op-program/bin/prestate.json --meta op-program/bin/meta.json --proof-fmt 'op-program/bin/%d.json' --output ""
 	mv op-program/bin/0.json op-program/bin/prestate-proof.json
 
 mod-tidy:
@@ -94,6 +94,9 @@ nuke: clean devnet-clean
 .PHONY: nuke
 
 devnet-up:
+	@if [ ! -e op-program/bin ]; then \
+		make cannon-prestate; \
+	fi
 	$(shell ./ops/scripts/newer-file.sh .devnet/allocs-l1.json ./packages/contracts-bedrock)
 	if [ $(.SHELLSTATUS) -ne 0 ]; then \
 		make devnet-allocs; \
@@ -114,6 +117,7 @@ devnet-down:
 
 devnet-clean:
 	rm -rf ./packages/contracts-bedrock/deployments/devnetL1
+	rm -rf ./packages/contracts-bedrock/deploy-config/devnetL1.json
 	rm -rf ./.devnet
 	cd ./ops-bedrock && docker compose down
 	docker image ls 'ops-bedrock*' --format='{{.Repository}}' | xargs -r docker rmi
@@ -149,7 +153,6 @@ semgrep:
 clean-node-modules:
 	rm -rf node_modules
 	rm -rf packages/**/node_modules
-
 
 tag-bedrock-go-modules:
 	./ops/scripts/tag-bedrock-go-modules.sh $(BEDROCK_TAGS_REMOTE) $(VERSION)

@@ -112,7 +112,14 @@ func NewSimpleTxManager(name string, l log.Logger, m metrics.TxMetricer, cfg CLI
 	if err != nil {
 		return nil, err
 	}
+	return NewSimpleTxManagerFromConfig(name, l, m, conf)
+}
 
+// NewSimpleTxManager initializes a new SimpleTxManager with the passed Config.
+func NewSimpleTxManagerFromConfig(name string, l log.Logger, m metrics.TxMetricer, conf Config) (*SimpleTxManager, error) {
+	if err := conf.Check(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
 	return &SimpleTxManager{
 		chainID: conf.ChainID,
 		name:    name,
@@ -143,6 +150,8 @@ type TxCandidate struct {
 	MethodId []byte
 	// GasLimit is the gas limit to be used in the constructed tx.
 	GasLimit uint64
+	// Value is the value to be used in the constructed tx.
+	Value *big.Int
 }
 
 // Send is used to publish a transaction with incrementally higher gas prices
@@ -223,6 +232,7 @@ func (m *SimpleTxManager) craftTx(ctx context.Context, candidate TxCandidate) (*
 		GasTipCap: gasTipCap,
 		GasFeeCap: gasFeeCap,
 		Data:      data,
+		Value:     candidate.Value,
 	}
 
 	m.l.Info("Creating tx", "to", rawTx.To, "from", m.cfg.From)
@@ -238,6 +248,7 @@ func (m *SimpleTxManager) craftTx(ctx context.Context, candidate TxCandidate) (*
 			GasFeeCap: gasFeeCap,
 			GasTipCap: gasTipCap,
 			Data:      rawTx.Data,
+			Value:     rawTx.Value,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to estimate gas: %w", err)

@@ -12,6 +12,7 @@ version:
 
 compile:
 	cd $(contracts-dir) && \
+		forge clean && \
 		forge build ${FORGE_BUILD_ARGS}
 
 bindings: compile bindings-build

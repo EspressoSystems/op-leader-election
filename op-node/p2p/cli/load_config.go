@@ -23,6 +23,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/ethereum/go-ethereum/p2p/netutil"
 )
 
 func NewConfig(ctx *cli.Context, rollupCfg *rollup.Config) (*p2p.Config, error) {
@@ -191,6 +192,14 @@ func loadDiscoveryOpts(conf *p2p.Config, ctx *cli.Context) error {
 		conf.Bootnodes = bootnodes
 	} else {
 		conf.Bootnodes = p2p.DefaultBootnodes
+	}
+
+	if ctx.IsSet(flags.NetRestrict.Name) {
+		netRestrict, err := netutil.ParseNetlist(ctx.String(flags.NetRestrict.Name))
+		if err != nil {
+			return fmt.Errorf("failed to parse net list: %w", err)
+		}
+		conf.NetRestrict = netRestrict
 	}
 
 	return nil

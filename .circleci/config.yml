@@ -776,11 +776,8 @@ jobs:
       module:
         description: Go Module Name
         type: string
-      use_http:
-        description: If the op-e2e package should use HTTP clients
-        type: string
-      use_external:
-        description: The extra-process shim (if any) that should be used
+      target:
+        description: The make target to execute
         type: string
     docker:
       - image: us-docker.pkg.dev/oplabs-tools-artifacts/images/ci-builder:latest
@@ -788,17 +785,10 @@ jobs:
     steps:
       - checkout
       - check-changed:
-          patterns: op-(.+),contracts-bedrock
+          patterns: op-(.+),cannon,contracts-bedrock
       - run:
           name: prep results dir
           command: mkdir -p /tmp/test-results
-      - when:
-          condition: <<parameters.use_external>>
-          steps:
-            - run:
-                name: Build Shim
-                command: make -C <<parameters.use_external>>
-                working_directory: <<parameters.module>>
       - run:
           name: install geth
           command: make install-geth
@@ -809,20 +799,11 @@ jobs:
           name: print go's available MIPS targets
           command: go tool dist list | grep mips
       - run:
-          name: Run all init steps for op-e2e
-          command: make pre-test
-          working_directory: <<parameters.module>>
-      - run:
           name: run tests
-          command: |
+          command:
             # Note: We don't use circle CI test splits because we need to split by test name, not by package. There is an additional
             # constraint that gotestsum does not currently (nor likely will) accept files from different pacakges when building.
-            # Note: -parallel must be set to match the number of cores in the resource class
-            export TEST_SUFFIX="<<parameters.use_external>>"
-            export EXTERNAL_L2="$(test -z '<<parameters.use_external>>' || echo '<<parameters.use_external>>/shim')"
-            OP_TESTLOG_DISABLE_COLOR=true OP_E2E_DISABLE_PARALLEL=false OP_E2E_USE_HTTP=<<parameters.use_http>>  gotestsum \
-            --format=standard-verbose --junitfile=/tmp/test-results/<<parameters.module>>_http_<<parameters.use_http>>$TEST_SUFFIX.xml \
-            -- -timeout=20m -parallel=8 --externalL2 "$EXTERNAL_L2" ./...
+            JUNIT_FILE=/tmp/test-results/<<parameters.module>>_<<parameters.target>>.xml make <<parameters.target>>
           working_directory: <<parameters.module>>
       - store_test_results:
           path: /tmp/test-results
@@ -1173,7 +1154,7 @@ workflows:
       - indexer-tests:
           requires: [ hold ]
       - go-lint-test-build:
-          name: op-heartbeat tests
+          name: op-heartbeat-tests
           binary_name: op-heartbeat
           working_directory: op-heartbeat
           requires: [ hold ]
@@ -1271,23 +1252,25 @@ workflows:
       - go-e2e-test:
           name: op-e2e-WS-tests
           module: op-e2e
-          use_http: "false"
           requires: [ hold ]
-          use_external: ""
+          target: test-ws
       - go-e2e-test:
           name: op-e2e-HTTP-tests
           module: op-e2e
-          use_http: "true"
           requires: [ hold ]
-          use_external: ""
+          target: test-http
       - go-e2e-test:
-          name: op-e2e-WS-tests-external-geth
+          name: op-e2e-ext-geth-tests
           module: op-e2e
-          use_http: "false"
           requires: [ hold ]
-          use_external: "external_geth"
+          target: test-external-geth
       - bedrock-go-tests:
           requires:
+            - go-mod-tidy
+            - cannon-build-test-vectors
+            - cannon-go-lint-and-test
+            - check-generated-mocks-op-node
+            - check-generated-mocks-op-service
             - op-batcher-lint
             - op-bootnode-lint
             - op-bindings-lint
@@ -1301,6 +1284,7 @@ workflows:
             - op-batcher-tests
             - op-bindings-tests
             - op-chain-ops-tests
+            - op-heartbeat-tests
             - op-node-tests
             - op-proposer-tests
             - op-challenger-tests
@@ -1308,6 +1292,7 @@ workflows:
             - op-service-tests
             - op-e2e-WS-tests
             - op-e2e-HTTP-tests
+            - op-e2e-ext-geth-tests
       - docker-build:
           name: op-node-docker-build
           docker_file: op-node/Dockerfile

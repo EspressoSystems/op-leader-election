@@ -1,13 +1,14 @@
 package cmd
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"strings"
+	"path"
+
+	"github.com/ethereum-optimism/optimism/op-service/ioutil"
 )
 
 func loadJSON[X any](inputPath string) (*X, error) {
@@ -15,18 +16,11 @@ func loadJSON[X any](inputPath string) (*X, error) {
 		return nil, errors.New("no path specified")
 	}
 	var f io.ReadCloser
-	f, err := os.OpenFile(inputPath, os.O_RDONLY, 0)
+	f, err := ioutil.OpenDecompressed(inputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %q: %w", inputPath, err)
 	}
 	defer f.Close()
-	if isGzip(inputPath) {
-		f, err = gzip.NewReader(f)
-		if err != nil {
-			return nil, fmt.Errorf("create gzip reader: %w", err)
-		}
-		defer f.Close()
-	}
 	var state X
 	if err := json.NewDecoder(f).Decode(&state); err != nil {
 		return nil, fmt.Errorf("failed to decode file %q: %w", inputPath, err)
@@ -34,24 +28,27 @@ func loadJSON[X any](inputPath string) (*X, error) {
 	return &state, nil
 }
 
-func writeJSON[X any](outputPath string, value X, outIfEmpty bool) error {
+func writeJSON[X any](outputPath string, value X) error {
+	if outputPath == "" {
+		return nil
+	}
 	var out io.Writer
-	if outputPath != "" {
-		f, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	finish := func() error { return nil }
+	if outputPath != "-" {
+		// Write to a tmp file but reserve the file extension if present
+		tmpPath := outputPath + "-tmp" + path.Ext(outputPath)
+		f, err := ioutil.OpenCompressed(tmpPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
 		if err != nil {
 			return fmt.Errorf("failed to open output file: %w", err)
 		}
 		defer f.Close()
 		out = f
-		if isGzip(outputPath) {
-			g := gzip.NewWriter(f)
-			defer g.Close()
-			out = g
+		finish = func() error {
+			// Rename the file into place as atomically as the OS will allow
+			return os.Rename(tmpPath, outputPath)
 		}
-	} else if outIfEmpty {
-		out = os.Stdout
 	} else {
-		return nil
+		out = os.Stdout
 	}
 	enc := json.NewEncoder(out)
 	if err := enc.Encode(value); err != nil {
@@ -61,9 +58,8 @@ func writeJSON[X any](outputPath string, value X, outIfEmpty bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to append new-line: %w", err)
 	}
+	if err := finish(); err != nil {
+		return fmt.Errorf("failed to finish write: %w", err)
+	}
 	return nil
-}
-
-func isGzip(path string) bool {
-	return strings.HasSuffix(path, ".gz")
 }
