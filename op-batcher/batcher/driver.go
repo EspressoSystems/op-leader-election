@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
@@ -35,8 +36,9 @@ type BatchSubmitter struct {
 	killCtx           context.Context
 	cancelKillCtx     context.CancelFunc
 
-	mutex   sync.Mutex
-	running bool
+	mutex    sync.Mutex
+	running  bool
+	isLeader bool
 
 	// lastStoredBlock is the last block loaded into `state`. If it is empty it should be set to the l2 safe head.
 	lastStoredBlock eth.BlockID
@@ -134,18 +136,22 @@ func NewBatchSubmitter(ctx context.Context, cfg Config, l log.Logger, m metrics.
 	var submitMethodId []byte
 	if cfg.BatchInboxAbi == nil {
 		biAbi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
-		if err == nil && biAbi != nil {
-			cfg.BatchInboxAbi = biAbi
-			submit, exists := biAbi.Methods["submit"]
-			if exists {
-				submitMethodId = submit.ID
-			}
+		if err != nil {
+			return nil, err
+		}
+		cfg.BatchInboxAbi = biAbi
+		submit, exists := biAbi.Methods["submit"]
+		if exists {
+			submitMethodId = submit.ID
 		}
 	}
+
+	isLeader := cfg.BatchInboxVersion == derive.BatchV1Type
 
 	return &BatchSubmitter{
 		Config:         cfg,
 		txMgr:          cfg.TxManager,
+		isLeader:       isLeader,
 		state:          NewChannelManager(l, m, cfg.Channel),
 		submitMethodId: submitMethodId,
 	}, nil
@@ -313,6 +319,70 @@ func (l *BatchSubmitter) calculateL2BlockRangeToStore(ctx context.Context) (eth.
 // Submitted batch, but it is not valid
 // Missed L2 block somehow.
 
+func (l *BatchSubmitter) checkLeaderElectionBatcherIsLeaderStatus() (bool, error) {
+	// check if L1Block has changed
+	l1tip, err := l.l1Tip(l.shutdownCtx)
+	if err != nil {
+		l.log.Error("Failed to query L1 tip", "error", err)
+		return false, err
+	}
+	if l.lastL1Tip == l1tip {
+		return l.isLeader, nil
+	}
+
+	sysConf, err := bindings.NewSystemConfigCaller(l.Rollup.L1SystemConfigAddress, l.L1Client)
+	if err == nil {
+		batcherHash, err := sysConf.BatcherHash(&bind.CallOpts{BlockNumber: big.NewInt(int64(l1tip.Number)), Context: l.shutdownCtx})
+		if err == nil {
+			if batcherHash[0] == derive.BatchV1Type {
+				l.Config.BatchInboxVersion = derive.BatchV1Type
+			} else if batcherHash[0] == derive.BatchV2Type {
+				l.Config.BatchInboxVersion = derive.BatchV2Type
+			}
+		}
+	}
+
+	if l.Config.BatchInboxVersion == derive.BatchV1Type {
+		return true, nil
+	}
+
+	lebi, err := bindings.NewLeaderElectionBatchInboxCaller(l.Rollup.BatchInboxContractAddr, l.L1Client)
+	if err != nil {
+		l.log.Error("Failed to set up binding to Batch Inbox Contract", "error", err)
+		return false, err
+	}
+	isCurrentLeader, err := lebi.IsCurrentLeader(&bind.CallOpts{Context: l.shutdownCtx}, l.TxManager.From(), big.NewInt(int64(l1tip.Number+1)))
+	if err != nil {
+		l.log.Error("Failed in eth_call to isCurrentLeader", "error", err)
+		return false, err
+	}
+	if !isCurrentLeader {
+		l.isLeader = false
+		return false, nil
+	}
+	l.isLeader = true
+
+	_, leaderSpan, err := lebi.NextBlocksAsLeader(&bind.CallOpts{Context: l.shutdownCtx}, l.TxManager.From(), big.NewInt(int64(l1tip.Number+1)))
+	if err != nil {
+		l.log.Error("Failed in eth_call to nextBlocksAsLeader", "error", err)
+		return false, err
+	}
+	for i, b := range leaderSpan {
+		if !b {
+			if i == 0 {
+				// Adjust to the current in progress block, which returned true for `IsCurrentLeader`.
+				l.state.setLastLeaderBlock(l1tip.Number + 1)
+			} else {
+				// Set to the block before the one that returned `false`
+				// i is indexed from l1tip.Number + 1, so l1tip.Number + i is the correct block.
+				l.state.setLastLeaderBlock(l1tip.Number + uint64(i))
+			}
+			break
+		}
+	}
+	return l.isLeader, nil
+}
+
 func (l *BatchSubmitter) loop() {
 	defer l.wg.Done()
 
@@ -325,7 +395,14 @@ func (l *BatchSubmitter) loop() {
 	for {
 		select {
 		case <-ticker.C:
-			// refresh SystemConfig
+			isLeader, err := l.checkLeaderElectionBatcherIsLeaderStatus()
+			if err != nil {
+				l.log.Error("error checking status with leader election batch inbox")
+			}
+			if !isLeader {
+				l.state.Clear()
+				continue
+			}
 			if err := l.loadBlocksIntoState(l.shutdownCtx); errors.Is(err, ErrReorg) {
 				err := l.state.Close()
 				if err != nil {
