@@ -34,6 +34,8 @@ type channelManager struct {
 	// last block hash - for reorg detection
 	tip common.Hash
 
+	knownLastLeaderBlock uint64
+
 	// channel to write new block data to
 	currentChannel *channel
 	// channels to read frame data from, for writing batches onchain
@@ -66,6 +68,7 @@ func (s *channelManager) Clear() {
 	s.currentChannel = nil
 	s.channelQueue = nil
 	s.txChannels = make(map[txID]*channel)
+	s.knownLastLeaderBlock = 0
 }
 
 // TxFailed records a transaction as failed. It will attempt to resubmit the data
@@ -199,6 +202,9 @@ func (s *channelManager) ensureChannelWithSpace(l1Head eth.BlockID) error {
 	if err != nil {
 		return fmt.Errorf("creating new channel: %w", err)
 	}
+	if s.knownLastLeaderBlock != 0 && pc.channelBuilder != nil {
+		pc.channelBuilder.updateLeaderTimeout(s.knownLastLeaderBlock)
+	}
 	s.currentChannel = pc
 	s.channelQueue = append(s.channelQueue, pc)
 	s.log.Info("Created channel",
@@ -218,6 +224,13 @@ func (s *channelManager) registerL1Block(l1Head eth.BlockID) {
 		"channel_full", s.currentChannel.IsFull(),
 		"full_reason", s.currentChannel.FullErr(),
 	)
+}
+
+func (s *channelManager) setLastLeaderBlock(lastL1Block uint64) {
+	s.knownLastLeaderBlock = lastL1Block
+	if s.currentChannel != nil && s.currentChannel.channelBuilder != nil {
+		s.currentChannel.channelBuilder.updateLeaderTimeout(lastL1Block)
+	}
 }
 
 // processBlocks adds blocks from the blocks queue to the pending channel until
