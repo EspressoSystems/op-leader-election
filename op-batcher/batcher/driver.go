@@ -319,7 +319,7 @@ func (l *BatchSubmitter) calculateL2BlockRangeToStore(ctx context.Context) (eth.
 // Submitted batch, but it is not valid
 // Missed L2 block somehow.
 
-func (l *BatchSubmitter) checkLeaderElectionBatcherStatus() (bool, error) {
+func (l *BatchSubmitter) checkLeaderElectionBatcherIsLeaderStatus() (bool, error) {
 	// check if L1Block has changed
 	l1tip, err := l.l1Tip(l.shutdownCtx)
 	if err != nil {
@@ -370,8 +370,11 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherStatus() (bool, error) {
 	for i, b := range leaderSpan {
 		if !b {
 			if i == 0 {
+				// Adjust to the current in progress block, which returned true for `IsCurrentLeader`.
 				l.state.setLastLeaderBlock(l1tip.Number + 1)
 			} else {
+				// Set to the block before the one that returned `false`
+				// i is indexed from l1tip.Number + 1, so l1tip.Number + i is the correct block.
 				l.state.setLastLeaderBlock(l1tip.Number + uint64(i))
 			}
 			break
@@ -392,7 +395,7 @@ func (l *BatchSubmitter) loop() {
 	for {
 		select {
 		case <-ticker.C:
-			isLeader, err := l.checkLeaderElectionBatcherStatus()
+			isLeader, err := l.checkLeaderElectionBatcherIsLeaderStatus()
 			if err != nil {
 				l.log.Error("error checking status with leader election batch inbox")
 			}
