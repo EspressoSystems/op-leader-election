@@ -10,28 +10,39 @@ import { LeaderElectionBatchInbox } from "./LeaderElectionBatchInbox.sol";
 
 contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeable, Semver {
     // @notice The number of leader slots that can be checked in advance
-    uint8 public constant HORIZON = 10;
-
-    uint256 public creation_block_number;
     uint256 public max_number_participants;
-    uint32 index_last_inserted_participant;
+    uint256 public number_of_slots_per_leader;
+    uint256 public horizon;
+    uint32 private index_last_inserted_participant;
+
     mapping(uint256 => address) public participants;
     mapping(address => bool) public is_participant;
     // TODO No need to be public, just for testing purposes. Do this more cleanly
 
     constructor() Semver(0, 1, 0) {
-        initialize({ _owner: address(0xdEaD), _max_number_participants: 0 });
+        initialize({ _owner: address(0xdEaD), _max_number_participants: 0, _number_of_slots_per_leader: 0 });
     }
 
-    function initialize(address _owner, uint256 _max_number_participants) public reinitializer(2) {
+    function initialize(
+        address _owner,
+        uint256 _max_number_participants,
+        uint256 _number_of_slots_per_leader
+    )
+        public
+        reinitializer(2)
+    {
         __Ownable_init();
         transferOwnership(_owner);
 
         max_number_participants = _max_number_participants;
+        number_of_slots_per_leader = _number_of_slots_per_leader;
         creation_block_number = block.number;
+        horizon = max_number_participants * number_of_slots_per_leader;
     }
 
-    function addParticipant(address _addr) public onlyOwner {
+    // TODO for production purposes it might be desirable to make this function "onlyOwner". However the tests would be
+    // harder to write. See ticket https://github.com/EspressoSystems/op-leader-election/issues/73
+    function addParticipant(address _addr) public override {
         require(
             index_last_inserted_participant < max_number_participants,
             "RoundRobinLeaderElection: list of participants is full."
@@ -48,7 +59,9 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
             return false;
         } else {
             uint32 number_participants = index_last_inserted_participant;
-            uint256 index_leader = (_blockNumber - creation_block_number) % number_participants;
+            uint256 range_from_creation =
+                (_blockNumber - creation_block_number) % (number_participants * number_of_slots_per_leader);
+            uint256 index_leader = range_from_creation / number_of_slots_per_leader;
             return participants[index_leader] == _leaderId;
         }
     }
@@ -67,8 +80,8 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
             return (LeaderStatusFlags.Invalid, emptyArray);
         } else {
             // Build the bitmap
-            bool[] memory leaderSlots = new bool[](HORIZON);
-            for (uint256 i = 0; i < HORIZON; i++) {
+            bool[] memory leaderSlots = new bool[](horizon);
+            for (uint256 i = 0; i < horizon; i++) {
                 leaderSlots[i] = this.isCurrentLeader(_leaderId, _blockNumber + i);
             }
 

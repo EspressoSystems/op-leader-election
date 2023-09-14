@@ -5,6 +5,8 @@ pragma solidity ^0.8.0;
 /// @notice Interface for implementing a leader election scheme
 
 abstract contract LeaderElectionBatchInbox {
+    uint256 public creation_block_number;
+
     enum LeaderStatusFlags {
         Scheduled,
         Unscheduled,
@@ -20,6 +22,10 @@ abstract contract LeaderElectionBatchInbox {
         /// The number of L2 blocks in this channel (including the current frame).
         uint16 numL2Blocks;
     }
+
+    /// @notice insert a new participant in the leaders' list
+    /// @param _addr address of the participant
+    function addParticipant(address _addr) public virtual;
 
     /// @notice Allows to submit a batch. This function checks that the caller is the leader for the current block.
     ///
