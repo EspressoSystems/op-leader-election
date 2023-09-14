@@ -72,7 +72,8 @@ contract RoundRobinLeaderElectionTest is Test {
         // Wrong leader, cannot submit
         address notALeader = vm.addr(1234);
         vm.prank(notALeader);
-        vm.expectRevert("RoundRobinLeaderElection: submit function must be called by the leader.");
+        vm.expectRevert("LeaderElectionBatchInbox: submit function must be called by the leader.");
+
         LeaderElectionBatchInbox.Meta[] memory metas = new LeaderElectionBatchInbox.Meta[](1);
         leaderContract.submit(metas, "frames");
 
