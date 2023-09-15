@@ -313,6 +313,10 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 	require.Equal(t, receipt.Status, types.ReceiptStatusSuccessful, "transaction failed")
 }
 
+func waitForTransaction(hash common.Hash, l1Client *ethclient.Client, timeout time.Duration) {
+	panic("unimplemented")
+}
+
 // Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
 func (sys *System) InitLeaderBatchInboxContract(t *testing.T) {
 
