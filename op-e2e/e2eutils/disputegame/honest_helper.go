@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum-optimism/optimism/op-challenger/fault/types"
+	"github.com/ethereum-optimism/optimism/op-challenger/game/fault/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,4 +41,19 @@ func (h *HonestHelper) Defend(ctx context.Context, claimIdx int64) {
 	value, err := h.correctTrace.Get(ctx, traceIdx)
 	h.game.require.NoErrorf(err, "Get correct claim at trace index %v", traceIdx)
 	h.game.Defend(ctx, claimIdx, value)
+}
+
+func (h *HonestHelper) StepFails(ctx context.Context, claimIdx int64, isAttack bool) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	claim := h.game.getClaim(ctx, claimIdx)
+	pos := types.NewPositionFromGIndex(claim.Position.Uint64())
+	traceIdx := pos.TraceIndex(int(h.game.MaxDepth(ctx)))
+	if !isAttack {
+		// If we're defending, then the step will be from the trace to the next one
+		traceIdx += 1
+	}
+	prestate, proofData, _, err := h.correctTrace.GetStepData(ctx, traceIdx)
+	h.require.NoError(err, "Get step data")
+	h.game.StepFails(claimIdx, isAttack, prestate, proofData)
 }
