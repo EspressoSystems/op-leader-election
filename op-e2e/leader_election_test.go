@@ -55,15 +55,13 @@ func TestLeaderElectionSetup(t *testing.T) {
 	require.Nil(t, err)
 
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
-	batchersAddresses := make([]common.Address, 0, NumberOfLeaders)
 	batchersSecrets := make([]*ecdsa.PrivateKey, 0, NumberOfLeaders)
 	for i := 0; i < NumberOfLeaders; i++ {
-		batchersAddresses = append(batchersAddresses, accounts[i].Addr)
 		batchersSecrets = append(batchersSecrets, accounts[i].Key)
 	}
 	err = sys.setBatchers(batchersSecrets)
 	require.Nil(t, err)
-	sys.InitLeaderBatchInboxContract(t, batchersAddresses)
+	sys.InitLeaderBatchInboxContract(t)
 
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
 	blockNumberOfBatchInboxContractDeployment, err := leaderElectionContract.CreationBlockNumber(&bind.CallOpts{})

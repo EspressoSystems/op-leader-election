@@ -308,12 +308,12 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 }
 
 // Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
-func (sys *System) InitLeaderBatchInboxContract(t *testing.T, addresses []common.Address) {
+func (sys *System) InitLeaderBatchInboxContract(t *testing.T) {
 
 	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 
 	for i := 0; i < NumberOfLeaders; i++ {
-		batchSubmitterAddress := addresses[i]
+		batchSubmitterAddress := sys.BatchSubmitters[i].TxManager.From()
 		addNewLeader(t, sys, batchSubmitterAddress)
 	}
 }
