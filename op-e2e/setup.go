@@ -308,13 +308,9 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 	tx, err := leaderElectionContract.AddParticipant(opts, address)
 	require.Nil(t, err, "Adding participant")
 
-	receipt, err := waitForTransaction(tx.Hash(), l1Client, timeout)
+	receipt, err := geth.WaitForTransaction(tx.Hash(), l1Client, timeout)
 	require.Nil(t, err, "The transaction is sent")
 	require.Equal(t, receipt.Status, types.ReceiptStatusSuccessful, "transaction failed")
-}
-
-func waitForTransaction(hash common.Hash, l1Client *ethclient.Client, timeout time.Duration) {
-	panic("unimplemented")
 }
 
 // Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
