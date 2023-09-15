@@ -3,7 +3,6 @@ package op_e2e
 import (
 	"context"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -312,6 +311,7 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 func (sys *System) InitLeaderBatchInboxContract(t *testing.T) {
 
 	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	require.Equal(t, 4, NumberOfLeaders, "The set of batchers is hardcoded for testing purposes.")
 
 	for i := 0; i < NumberOfLeaders; i++ {
 		batchSubmitterAddress := sys.BatchSubmitters[i].TxManager.From()
@@ -697,17 +697,14 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret)
 
 	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	require.Equal(t, 4, MaxNumberParticipants, "The set of batchers is hardcoded for testing purposes.")
+	secrets := []*ecdsa.PrivateKey{sys.cfg.Secrets.Batcher1, sys.cfg.Secrets.Batcher2, sys.cfg.Secrets.Batcher3, sys.cfg.Secrets.Batcher4}
 	for i := 0; i < MaxNumberParticipants; i++ {
-		priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup batch submitters: %w", err)
-		}
-		newBatchSubmitter, err := genNewBatchSubmitter(sys, cfg, priv)
+		newBatchSubmitter, err := genNewBatchSubmitter(sys, cfg, secrets[i])
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup batch submitters: %w", err)
 		}
 		sys.BatchSubmitters = append(sys.BatchSubmitters, newBatchSubmitter)
-
 	}
 
 	if err != nil {
