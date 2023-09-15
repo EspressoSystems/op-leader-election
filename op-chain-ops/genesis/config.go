@@ -203,8 +203,10 @@ type DeployConfig struct {
 	// FundDevAccounts configures whether or not to fund the dev accounts. Should only be used
 	// during devnet deployments.
 	FundDevAccounts bool `json:"fundDevAccounts"`
-	// The maximum number of participants in the leader election.
-	LeaderElectionMaxParticipants uint64 `json:"leaderElectionMaxParticipants"`
+	// The maximum number of leaders in the leader election.
+	LeaderElectionNumberOfLeaders uint64 `json:"leaderElectionNumberOfLeaders"`
+	// The number of consecutive slots assigned to each leader
+	LeaderElectionNumberOfSlotsPerLeader uint64 `json:"leaderElectionNumberOfSlotsPerLeader"`
 	// Batcher version at time of deployment
 	InitialBatcherVersion int `json:"initialBatcherVersion"`
 }
@@ -531,6 +533,8 @@ type L1Deployments struct {
 	L2OutputOracleProxy               common.Address `json:"L2OutputOracleProxy"`
 	OptimismMintableERC20Factory      common.Address `json:"OptimismMintableERC20Factory"`
 	OptimismMintableERC20FactoryProxy common.Address `json:"OptimismMintableERC20FactoryProxy"`
+	RoundRobinLeaderElection          common.Address `json:"RoundRobinLeaderElection"`
+	RoundRobinLeaderElectionProxy     common.Address `json:"RoundRobinLeaderElectionProxy"`
 	OptimismPortal                    common.Address `json:"OptimismPortal"`
 	OptimismPortalProxy               common.Address `json:"OptimismPortalProxy"`
 	ProxyAdmin                        common.Address `json:"ProxyAdmin"`

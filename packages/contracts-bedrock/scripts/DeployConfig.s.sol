@@ -48,7 +48,8 @@ contract DeployConfig is Script {
     uint256 public faultGameMaxDepth;
     uint256 public faultGameMaxDuration;
     uint256 public systemConfigStartBlock;
-    uint256 public leaderElectionMaxParticipants;
+    uint256 public leaderElectionNumberOfLeaders;
+    uint256 public leaderElectionNumberOfSlotsPerLeader;
     address public batchInboxContractAddress;
     uint256 public initialBatcherVersion;
 
@@ -92,7 +93,8 @@ contract DeployConfig is Script {
         eip1559Denominator = stdJson.readUint(_json, "$.eip1559Denominator");
         eip1559Elasticity = stdJson.readUint(_json, "$.eip1559Elasticity");
         systemConfigStartBlock = stdJson.readUint(_json, "$.systemConfigStartBlock");
-        leaderElectionMaxParticipants = stdJson.readUint(_json, "$.leaderElectionMaxParticipants");
+        leaderElectionNumberOfLeaders = stdJson.readUint(_json, "$.leaderElectionNumberOfLeaders");
+        leaderElectionNumberOfSlotsPerLeader = stdJson.readUint(_json, "$.leaderElectionNumberOfSlotsPerLeader");
         batchInboxContractAddress = stdJson.readAddress(_json, "$.batchInboxContractAddress");
         initialBatcherVersion = stdJson.readUint(_json, "$.initialBatcherVersion");
 

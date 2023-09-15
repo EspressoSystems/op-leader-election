@@ -49,7 +49,8 @@
   "eip1559Denominator": 50,
   "eip1559Elasticity": 10,
 
-  "leaderElectionMaxParticipants": 5,
+  "leaderElectionNumberOfLeaders": 3,
+  "leaderElectionNumberOfSlotsPerLeader":4,
   "initialBatcherVersion": 0,
 
   "systemConfigStartBlock": 8364212
