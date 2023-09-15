@@ -2,10 +2,11 @@ package op_e2e
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
@@ -28,17 +29,13 @@ func TestLeaderElectionSetup(t *testing.T) {
 	InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
-
-	sys, err := cfg.Start(t)
+	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-
-	//opGeth, err := NewOpGeth(t, ctx, &cfg)
-	//require.NoError(t, err)
-	//defer opGeth.Close()
 
 	opts, err := bind.NewKeyedTransactorWithChainID(sys.cfg.Secrets.Alice, cfg.L1ChainIDBig())
 	log.Info(opts.GasPrice.String())
@@ -56,31 +53,31 @@ func TestLeaderElectionSetup(t *testing.T) {
 	require.Nil(t, err)
 
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
-	sys.InitLeaderBatchInboxContract(t)
+	batcherAddresses := make([]common.Address, 0, NumberOfLeaders)
+	for i := 0; i < NumberOfLeaders; i++ {
+		batcherAddresses = append(batcherAddresses, accounts[i].Addr)
+	}
+	sys.InitLeaderBatchInboxContract(t, batcherAddresses)
 
 	// Check that the leader slots are correctly filled
-	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
 	blockNumberOfBatchInboxContractDeployment, err := leaderElectionContract.CreationBlockNumber(&bind.CallOpts{})
 	require.Nil(t, err)
 	blockNumberOfBatchInboxContractDeploymentInt := int(blockNumberOfBatchInboxContractDeployment.Int64())
 
-	// Check the address of each batcher is assigned the right leader slot
+	// Check the address of each batcher is assigned to the right leader slot and that it is funded
+	expectedBalance := new(big.Int)
+	expectedBalance, _ = expectedBalance.SetString("1000000000000000000000000", 10)
 	for i := 0; i < NumberOfLeaders; i++ {
-		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
+		batcherAddress := accounts[i].Addr
+		addressBalance, err := l1Client.BalanceAt(ctx, batcherAddress, nil)
+		require.NoError(t, err)
+		require.Equal(t, expectedBalance, addressBalance, "Batcher address does not seem to be funded.")
 
 		for j := 0; j < NumberOfSlotsPerLeader; j++ {
 			blockNumber := blockNumberOfBatchInboxContractDeploymentInt + i*NumberOfSlotsPerLeader + j
 			checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
 		}
-	}
-
-	// Check that each batcher address is funded
-	deployerBalance, err := l1Client.BalanceAt(ctx, sys.cfg.Secrets.Addresses().Deployer, nil)
-	for i := 0; i < NumberOfLeaders; i++ {
-		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
-		addressBalance, err := l1Client.BalanceAt(ctx, batcherAddress, nil)
-		require.NoError(t, err)
-		require.Equal(t, deployerBalance, addressBalance, "Batcher address does not seem to be funded.")
 	}
 }
