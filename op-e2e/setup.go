@@ -3,7 +3,6 @@ package op_e2e
 import (
 	"context"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -348,6 +347,19 @@ func NewSystemConfigOptions(_opts []SystemConfigOption) (SystemConfigOptions, er
 func (s *SystemConfigOptions) Get(key, role string) (systemConfigHook, bool) {
 	v, ok := s.opts[key+":"+role]
 	return v, ok
+}
+
+func (sys *System) setBatchers(secrets []*ecdsa.PrivateKey) error {
+	MaxNumberParticipants := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+
+	for i := 0; i < MaxNumberParticipants; i++ {
+		newBatchSubmitter, err := genNewBatchSubmitter(sys, sys.cfg, secrets[i])
+		if err != nil {
+			return fmt.Errorf("failed to setup batch submitters: %w", err)
+		}
+		sys.BatchSubmitters = append(sys.BatchSubmitters, newBatchSubmitter)
+	}
+	return nil
 }
 
 func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*System, error) {
@@ -695,20 +707,6 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	// Batch Submitter
 	secret := cfg.Secrets.Batcher
 	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret)
-
-	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
-	for i := 0; i < MaxNumberParticipants; i++ {
-		priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup batch submitters: %w", err)
-		}
-		newBatchSubmitter, err := genNewBatchSubmitter(sys, cfg, priv)
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup batch submitters: %w", err)
-		}
-		sys.BatchSubmitters = append(sys.BatchSubmitters, newBatchSubmitter)
-
-	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup batch submitter: %w", err)
