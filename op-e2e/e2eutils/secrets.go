@@ -27,10 +27,6 @@ var DefaultMnemonicConfig = &MnemonicConfig{
 	Bob:          "m/44'/60'/0'/0/7",
 	Mallory:      "m/44'/60'/0'/0/8",
 	SysCfgOwner:  "m/44'/60'/0'/0/9",
-	Batcher1:     "m/44'/60'/0'/0/10",
-	Batcher2:     "m/44'/60'/0'/0/11",
-	Batcher3:     "m/44'/60'/0'/0/12",
-	Batcher4:     "m/44'/60'/0'/0/13",
 }
 
 // MnemonicConfig configures the private keys for the hive testnet.
@@ -51,11 +47,6 @@ type MnemonicConfig struct {
 	Alice   string
 	Bob     string
 	Mallory string
-
-	Batcher1 string
-	Batcher2 string
-	Batcher3 string
-	Batcher4 string
 }
 
 // Secrets computes the private keys for all mnemonic paths,
@@ -105,22 +96,6 @@ func (m *MnemonicConfig) Secrets() (*Secrets, error) {
 	if err != nil {
 		return nil, err
 	}
-	batcher1, err := wallet.PrivateKey(account(m.Batcher1))
-	if err != nil {
-		return nil, err
-	}
-	batcher2, err := wallet.PrivateKey(account(m.Batcher2))
-	if err != nil {
-		return nil, err
-	}
-	batcher3, err := wallet.PrivateKey(account(m.Batcher3))
-	if err != nil {
-		return nil, err
-	}
-	batcher4, err := wallet.PrivateKey(account(m.Batcher4))
-	if err != nil {
-		return nil, err
-	}
 
 	return &Secrets{
 		Deployer:     deployer,
@@ -133,10 +108,6 @@ func (m *MnemonicConfig) Secrets() (*Secrets, error) {
 		Bob:          bob,
 		Mallory:      mallory,
 		Wallet:       wallet,
-		Batcher1:     batcher1,
-		Batcher2:     batcher2,
-		Batcher3:     batcher3,
-		Batcher4:     batcher4,
 	}, nil
 }
 
@@ -158,12 +129,6 @@ type Secrets struct {
 
 	// Share the wallet to be able to generate more accounts
 	Wallet *hdwallet.Wallet
-
-	// Batchers for testing
-	Batcher1 *ecdsa.PrivateKey
-	Batcher2 *ecdsa.PrivateKey
-	Batcher3 *ecdsa.PrivateKey
-	Batcher4 *ecdsa.PrivateKey
 }
 
 // EncodePrivKey encodes the given private key in 32 bytes
@@ -191,10 +156,6 @@ func (s *Secrets) Addresses() *Addresses {
 		Alice:        crypto.PubkeyToAddress(s.Alice.PublicKey),
 		Bob:          crypto.PubkeyToAddress(s.Bob.PublicKey),
 		Mallory:      crypto.PubkeyToAddress(s.Mallory.PublicKey),
-		Batcher1:     crypto.PubkeyToAddress(s.Batcher1.PublicKey),
-		Batcher2:     crypto.PubkeyToAddress(s.Batcher2.PublicKey),
-		Batcher3:     crypto.PubkeyToAddress(s.Batcher3.PublicKey),
-		Batcher4:     crypto.PubkeyToAddress(s.Batcher3.PublicKey),
 	}
 }
 
@@ -213,12 +174,6 @@ type Addresses struct {
 	Alice   common.Address
 	Bob     common.Address
 	Mallory common.Address
-
-	// Batchers for testing
-	Batcher1 common.Address
-	Batcher2 common.Address
-	Batcher3 common.Address
-	Batcher4 common.Address
 }
 
 func (a *Addresses) All() []common.Address {
@@ -232,9 +187,5 @@ func (a *Addresses) All() []common.Address {
 		a.Alice,
 		a.Bob,
 		a.Mallory,
-		a.Batcher1,
-		a.Batcher2,
-		a.Batcher3,
-		a.Batcher4,
 	}
 }

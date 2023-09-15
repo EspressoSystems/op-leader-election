@@ -349,6 +349,19 @@ func (s *SystemConfigOptions) Get(key, role string) (systemConfigHook, bool) {
 	return v, ok
 }
 
+func (sys *System) setBatchers(secrets []*ecdsa.PrivateKey) error {
+	MaxNumberParticipants := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+
+	for i := 0; i < MaxNumberParticipants; i++ {
+		newBatchSubmitter, err := genNewBatchSubmitter(sys, sys.cfg, secrets[i])
+		if err != nil {
+			return fmt.Errorf("failed to setup batch submitters: %w", err)
+		}
+		sys.BatchSubmitters = append(sys.BatchSubmitters, newBatchSubmitter)
+	}
+	return nil
+}
+
 func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*System, error) {
 	opts, err := NewSystemConfigOptions(_opts)
 	if err != nil {
@@ -694,17 +707,6 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	// Batch Submitter
 	secret := cfg.Secrets.Batcher
 	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret)
-
-	MaxNumberParticipants := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
-	require.Equal(t, 4, MaxNumberParticipants, "The set of batchers is hardcoded for testing purposes.")
-	secrets := []*ecdsa.PrivateKey{sys.cfg.Secrets.Batcher1, sys.cfg.Secrets.Batcher2, sys.cfg.Secrets.Batcher3, sys.cfg.Secrets.Batcher4}
-	for i := 0; i < MaxNumberParticipants; i++ {
-		newBatchSubmitter, err := genNewBatchSubmitter(sys, cfg, secrets[i])
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup batch submitters: %w", err)
-		}
-		sys.BatchSubmitters = append(sys.BatchSubmitters, newBatchSubmitter)
-	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup batch submitter: %w", err)

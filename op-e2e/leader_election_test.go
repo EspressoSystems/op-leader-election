@@ -2,6 +2,7 @@ package op_e2e
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"math/big"
 	"testing"
 	"time"
@@ -31,6 +32,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 	cfg := DefaultSystemConfig(t)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
+
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
@@ -53,13 +55,15 @@ func TestLeaderElectionSetup(t *testing.T) {
 	require.Nil(t, err)
 
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
-	batcherAddresses := make([]common.Address, 0, NumberOfLeaders)
+	batchersAddresses := make([]common.Address, 0, NumberOfLeaders)
+	batchersSecrets := make([]*ecdsa.PrivateKey, 0, NumberOfLeaders)
 	for i := 0; i < NumberOfLeaders; i++ {
-		batcherAddresses = append(batcherAddresses, accounts[i].Addr)
+		batchersAddresses = append(batchersAddresses, accounts[i].Addr)
+		batchersSecrets = append(batchersSecrets, accounts[i].Key)
 	}
-	sys.InitLeaderBatchInboxContract(t, batcherAddresses)
-
-	// Check that the leader slots are correctly filled
+	err = sys.setBatchers(batchersSecrets)
+	require.Nil(t, err)
+	sys.InitLeaderBatchInboxContract(t, batchersAddresses)
 
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
 	blockNumberOfBatchInboxContractDeployment, err := leaderElectionContract.CreationBlockNumber(&bind.CallOpts{})
@@ -70,7 +74,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 	expectedBalance := new(big.Int)
 	expectedBalance, _ = expectedBalance.SetString("1000000000000000000000000", 10)
 	for i := 0; i < NumberOfLeaders; i++ {
-		batcherAddress := accounts[i].Addr
+		batcherAddress := sys.BatchSubmitters[i].TxManager.From()
 		addressBalance, err := l1Client.BalanceAt(ctx, batcherAddress, nil)
 		require.NoError(t, err)
 		require.Equal(t, expectedBalance, addressBalance, "Batcher address does not seem to be funded.")
