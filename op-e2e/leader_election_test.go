@@ -26,6 +26,15 @@ func checkIsLeader(
 	require.True(t, isLeader)
 }
 
+func getBatchInboxContract(t *testing.T, sys *System) *bindings.LeaderElectionBatchInbox {
+	// Instantiate the Leader Election Batch Inbox contract
+	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
+	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
+	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(sys.cfg.L1Deployments.RoundRobinLeaderElectionProxy, sys.Clients["l1"])
+	require.Nil(t, err)
+	return leaderElectionContract
+}
+
 func TestLeaderElectionSetup(t *testing.T) {
 	InitParallel(t)
 
@@ -49,10 +58,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 	l1Client := sys.Clients["l1"]
 
 	// Instantiate the Leader Election Batch Inbox contract
-	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
-	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
-	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(cfg.L1Deployments.RoundRobinLeaderElectionProxy, l1Client)
-	require.Nil(t, err)
+	leaderElectionContract := getBatchInboxContract(t, sys)
 
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
 	batchersSecrets := make([]*ecdsa.PrivateKey, 0, NumberOfLeaders)
