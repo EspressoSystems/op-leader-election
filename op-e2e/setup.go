@@ -313,7 +313,10 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 }
 
 // Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
-func (sys *System) InitLeaderBatchInboxContract(t *testing.T) {
+func (sys *System) InitLeaderBatchInboxContract(t *testing.T, accounts []*TestAccount) {
+
+	err := sys.setBatchers(accounts)
+	require.Nil(t, err)
 
 	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 
@@ -354,11 +357,17 @@ func (s *SystemConfigOptions) Get(key, role string) (systemConfigHook, bool) {
 	return v, ok
 }
 
-func (sys *System) setBatchers(secrets []*ecdsa.PrivateKey) error {
-	MaxNumberParticipants := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+func (sys *System) setBatchers(accounts []*TestAccount) error {
+	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 
-	for i := 0; i < MaxNumberParticipants; i++ {
-		newBatchSubmitter, err := genNewBatchSubmitter(sys, sys.cfg, secrets[i])
+	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
+	batchersSecrets := make([]*ecdsa.PrivateKey, 0, NumberOfLeaders)
+	for i := 0; i < NumberOfLeaders; i++ {
+		batchersSecrets = append(batchersSecrets, accounts[i].Key)
+	}
+
+	for i := 0; i < NumberOfLeaders; i++ {
+		newBatchSubmitter, err := genNewBatchSubmitter(sys, sys.cfg, batchersSecrets[i])
 		if err != nil {
 			return fmt.Errorf("failed to setup batch submitters: %w", err)
 		}

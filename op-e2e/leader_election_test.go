@@ -2,7 +2,8 @@ package op_e2e
 
 import (
 	"context"
-	"crypto/ecdsa"
+	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils/geth"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"math/big"
 	"testing"
 	"time"
@@ -38,6 +39,7 @@ func getBatchInboxContract(t *testing.T, sys *System) *bindings.LeaderElectionBa
 func TestLeaderElectionSetup(t *testing.T) {
 	InitParallel(t)
 
+	// TODO extract function to generate the setup. Problem, by doing so one gets some weird error related to the Batch inbox contract bindings
 	cfg := DefaultSystemConfig(t)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
@@ -59,15 +61,8 @@ func TestLeaderElectionSetup(t *testing.T) {
 
 	// Instantiate the Leader Election Batch Inbox contract
 	leaderElectionContract := getBatchInboxContract(t, sys)
-
-	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
-	batchersSecrets := make([]*ecdsa.PrivateKey, 0, NumberOfLeaders)
-	for i := 0; i < NumberOfLeaders; i++ {
-		batchersSecrets = append(batchersSecrets, accounts[i].Key)
-	}
-	err = sys.setBatchers(batchersSecrets)
-	require.Nil(t, err)
-	sys.InitLeaderBatchInboxContract(t)
+	
+	sys.InitLeaderBatchInboxContract(t, accounts)
 
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
 	blockNumberOfBatchInboxContractDeployment, err := leaderElectionContract.CreationBlockNumber(&bind.CallOpts{})
@@ -88,4 +83,60 @@ func TestLeaderElectionSetup(t *testing.T) {
 			checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
 		}
 	}
+}
+
+func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
+	InitParallel(t)
+
+	// TODO extract function to generate the setup(see function TestLeaderElectionSetup above).
+	cfg := DefaultSystemConfig(t)
+	cfg.DeployConfig.InitialBatcherVersion = derive.BatchV2Type // TODO Make a function for  that
+	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
+
+	require.Nil(t, err, "Error starting up system")
+	defer sys.Close()
+
+	opts, err := bind.NewKeyedTransactorWithChainID(sys.cfg.Secrets.Alice, cfg.L1ChainIDBig())
+	log.Info(opts.GasPrice.String())
+	require.Nil(t, err)
+
+	log := testlog.Logger(t, log.LvlInfo)
+	log.Info("genesis", "l2", sys.RollupConfig.Genesis.L2, "l1", sys.RollupConfig.Genesis.L1, "l2_time", sys.RollupConfig.Genesis.L2Time)
+
+	sys.InitLeaderBatchInboxContract(t, accounts)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	l1Client := sys.Clients["l1"]
+	//
+	//// Instantiate the Leader Election Batch Inbox contract
+	//leaderElectionContract := getBatchInboxContract(t, sys)
+
+	// Fetch the current block number to determine who is the right batcher
+	//time.Sleep(time.Second * 4)
+
+	//err = sys.BatchSubmitters[0].Start()
+	//require.Nil(t, err)
+
+	l1Number, err := l1Client.BlockNumber(ctx)
+	require.Nil(t, err)
+
+	totalTxCount := 0
+	// wait for up to 10 L1 tx, usually only 3 is required, but it's
+	// possible additional L1 blocks will be created before the batcher starts,
+	// so we wait additional blocks.
+	for i := int64(0); i < 10; i++ {
+		block, err := geth.WaitForBlock(big.NewInt(int64(l1Number)+i), l1Client, time.Duration(cfg.DeployConfig.L1BlockTime*5)*time.Second)
+		require.Nil(t, err, "Waiting for l1 blocks")
+		totalTxCount += len(block.Transactions())
+
+		if totalTxCount >= 10 {
+			return
+		}
+	}
+
+	t.Fatal("Expected at least 10 transactions from the batcher")
+
 }
