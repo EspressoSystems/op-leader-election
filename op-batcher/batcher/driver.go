@@ -391,7 +391,7 @@ func (l *BatchSubmitter) loop() {
 
 	receiptsCh := make(chan txmgr.TxReceipt[txData])
 	queue := txmgr.NewQueue[txData](l.killCtx, l.txMgr, l.MaxPendingTransactions)
-
+	log.Info("Entering batch submitter loop")
 	for {
 		select {
 		case <-ticker.C:
@@ -400,15 +400,18 @@ func (l *BatchSubmitter) loop() {
 				l.log.Error("error checking status with leader election batch inbox")
 			}
 			if !isLeader {
+				log.Info("Batcher is not the leader")
 				l.state.Clear()
 				continue
 			}
+			log.Info("Batcher is the leader")
 			if err := l.loadBlocksIntoState(l.shutdownCtx); errors.Is(err, ErrReorg) {
 				err := l.state.Close()
 				if err != nil {
 					l.log.Error("error closing the channel manager to handle a L2 reorg", "err", err)
 				}
 				l.publishStateToL1(queue, receiptsCh, true)
+				log.Info("")
 				l.state.Clear()
 				continue
 			}
@@ -429,6 +432,8 @@ func (l *BatchSubmitter) loop() {
 // publishStateToL1 loops through the block data loaded into `state` and
 // submits the associated data to the L1 in the form of channel frames.
 func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData], drain bool) {
+
+	log.Info("Publishing state to L1...")
 	txDone := make(chan struct{})
 	// send/wait and receipt reading must be on a separate goroutines to avoid deadlocks
 	go func() {
@@ -441,12 +446,15 @@ func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh
 		}()
 		for {
 			err := l.publishTxToL1(l.killCtx, queue, receiptsCh)
+
 			if err != nil {
 				if drain && err != io.EOF {
 					l.log.Error("error sending tx while draining state", "err", err)
 				}
 				return
 			}
+
+			log.Info("Transaction published to L1")
 		}
 	}()
 

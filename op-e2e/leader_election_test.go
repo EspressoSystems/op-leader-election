@@ -91,7 +91,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	InitParallel(t)
 
-	// TODO extract function to generate the setup(see function TestLeaderElectionSetup above).
+	// TODO extract function to generate the setup(see function TestLe
 	cfg := DefaultSystemConfig(t)
 	cfg.DeployConfig.InitialBatcherVersion = derive.BatchV2Type // TODO Make a function for  that
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
@@ -111,9 +111,15 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	require.Nil(t, err)
 	rollupClient := sources.NewRollupClient(client.NewBaseRPCClient(rollupRPCClient))
 
-	err = sys.BatchSubmitters[0].Start()
-	require.Nil(t, err)
+	for i := 0; i < NumberOfLeaders; i++ {
+		err = sys.BatchSubmitters[i].Start()
+		require.Nil(t, err)
+	}
 
+	// Waiting for the batchers to be up
+	time.Sleep(5 * time.Second)
+
+	log.Info("Sending a transaction to L2...")
 	receipt := SendL2Tx(t, cfg, l2CLient, aliceKey, func(opts *TxOpts) {
 		opts.ToAddr = &cfg.Secrets.Addresses().Bob
 		opts.Value = big.NewInt(1_000)
