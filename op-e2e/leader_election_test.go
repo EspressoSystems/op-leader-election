@@ -2,9 +2,12 @@ package op_e2e
 
 import (
 	"context"
-	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils/geth"
+	"github.com/ethereum-optimism/optimism/op-node/client"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
+	"github.com/ethereum-optimism/optimism/op-node/sources"
+	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
+	"strconv"
 	"testing"
 	"time"
 
@@ -61,7 +64,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 
 	// Instantiate the Leader Election Batch Inbox contract
 	leaderElectionContract := getBatchInboxContract(t, sys)
-	
+
 	sys.InitLeaderBatchInboxContract(t, accounts)
 
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -97,46 +100,27 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
-	opts, err := bind.NewKeyedTransactorWithChainID(sys.cfg.Secrets.Alice, cfg.L1ChainIDBig())
-	log.Info(opts.GasPrice.String())
-	require.Nil(t, err)
-
-	log := testlog.Logger(t, log.LvlInfo)
-	log.Info("genesis", "l2", sys.RollupConfig.Genesis.L2, "l1", sys.RollupConfig.Genesis.L1, "l2_time", sys.RollupConfig.Genesis.L2Time)
-
 	sys.InitLeaderBatchInboxContract(t, accounts)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+	ctx := context.Background()
+	aliceKey := sys.cfg.Secrets.Alice
 
 	l1Client := sys.Clients["l1"]
-	//
-	//// Instantiate the Leader Election Batch Inbox contract
-	//leaderElectionContract := getBatchInboxContract(t, sys)
+	l2CLient := sys.Clients["sequencer"]
 
-	// Fetch the current block number to determine who is the right batcher
-	//time.Sleep(time.Second * 4)
+	rollupRPCClient, err := rpc.DialContext(context.Background(), sys.RollupNodes["sequencer"].HTTPEndpoint())
+	require.Nil(t, err)
+	rollupClient := sources.NewRollupClient(client.NewBaseRPCClient(rollupRPCClient))
 
-	//err = sys.BatchSubmitters[0].Start()
-	//require.Nil(t, err)
-
-	l1Number, err := l1Client.BlockNumber(ctx)
+	err = sys.BatchSubmitters[0].Start()
 	require.Nil(t, err)
 
-	totalTxCount := 0
-	// wait for up to 10 L1 tx, usually only 3 is required, but it's
-	// possible additional L1 blocks will be created before the batcher starts,
-	// so we wait additional blocks.
-	for i := int64(0); i < 10; i++ {
-		block, err := geth.WaitForBlock(big.NewInt(int64(l1Number)+i), l1Client, time.Duration(cfg.DeployConfig.L1BlockTime*5)*time.Second)
-		require.Nil(t, err, "Waiting for l1 blocks")
-		totalTxCount += len(block.Transactions())
+	receipt := SendL2Tx(t, cfg, l2CLient, aliceKey, func(opts *TxOpts) {
+		opts.ToAddr = &cfg.Secrets.Addresses().Bob
+		opts.Value = big.NewInt(1_000)
+	})
+	require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
 
-		if totalTxCount >= 10 {
-			return
-		}
-	}
-
-	t.Fatal("Expected at least 10 transactions from the batcher")
+	latestBlock := latestBlock(t, l1Client)
+	log.Info("Latest block ", strconv.Itoa(int(latestBlock)))
 
 }
