@@ -42,7 +42,6 @@ func getBatchInboxContract(t *testing.T, sys *System) *bindings.LeaderElectionBa
 func TestLeaderElectionSetup(t *testing.T) {
 	InitParallel(t)
 
-	// TODO extract function to generate the setup. Problem, by doing so one gets some weird error related to the Batch inbox contract bindings
 	cfg := DefaultSystemConfig(t)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
@@ -91,9 +90,8 @@ func TestLeaderElectionSetup(t *testing.T) {
 func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	InitParallel(t)
 
-	// TODO extract function to generate the setup(see function TestLe
 	cfg := DefaultSystemConfig(t)
-	cfg.DeployConfig.InitialBatcherVersion = derive.BatchV2Type // TODO Make a function for  that
+	cfg.DeployConfig.InitialBatcherVersion = derive.BatchV2Type // Test succeeds when we set derive.BatchV1Type
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
@@ -101,16 +99,16 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	defer sys.Close()
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
-	ctx := context.Background()
+
 	aliceKey := sys.cfg.Secrets.Alice
 
-	l1Client := sys.Clients["l1"]
 	l2CLient := sys.Clients["sequencer"]
 
 	rollupRPCClient, err := rpc.DialContext(context.Background(), sys.RollupNodes["sequencer"].HTTPEndpoint())
 	require.Nil(t, err)
 	rollupClient := sources.NewRollupClient(client.NewBaseRPCClient(rollupRPCClient))
 
+	// Start all batchers
 	for i := 0; i < NumberOfLeaders; i++ {
 		err = sys.BatchSubmitters[i].Start()
 		require.Nil(t, err)
@@ -120,13 +118,15 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	log.Info("Sending a transaction to L2...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	receipt := SendL2Tx(t, cfg, l2CLient, aliceKey, func(opts *TxOpts) {
 		opts.ToAddr = &cfg.Secrets.Addresses().Bob
 		opts.Value = big.NewInt(1_000)
 	})
-	require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
+	require.NoError(t, err, "Sending L2 tx")
+	log.Info("block receipt:", strconv.Itoa(int(receipt.BlockNumber.Uint64())))
 
-	latestBlock := latestBlock(t, l1Client)
-	log.Info("Latest block ", strconv.Itoa(int(latestBlock)))
+	require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
 
 }
