@@ -411,7 +411,6 @@ func (l *BatchSubmitter) loop() {
 					l.log.Error("error closing the channel manager to handle a L2 reorg", "err", err)
 				}
 				l.publishStateToL1(queue, receiptsCh, true)
-				log.Info("")
 				l.state.Clear()
 				continue
 			}
