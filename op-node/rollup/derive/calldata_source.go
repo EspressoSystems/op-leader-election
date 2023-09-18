@@ -1,7 +1,6 @@
 package derive
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -173,10 +172,10 @@ func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, re
 			receipt := receipts[j]
 			data := tx.Data()
 			// Exclude transactions if L1 transaction did call submit function.
-			if len(data) < 4 || !bytes.Equal(data[:4], SubmitAbi.ID) {
-				log.Warn("tx sent to inbox contract did not call submit function", "index", j)
-				continue // not calling submit function, ignore
-			}
+			//if len(data) < 4 || !bytes.Equal(data[:4], SubmitAbi.ID) {
+			//	log.Warn("tx sent to inbox contract did not call submit function", "index", j)
+			//	continue // not calling submit function, ignore
+			//}
 
 			// Exclude transactions if L1 transaction reverted.
 			if receipt.Status != types.ReceiptStatusSuccessful {
