@@ -204,7 +204,7 @@ func prepareCfgWithTestAccounts(cfg *SystemConfig, accountsToGenerate int) (*Sys
 // are funded on startup, starts the system, and imports the keys into the keystore, and obtains transaction opts for
 // each account.
 func startConfigWithTestAccounts(t *testing.T, cfg *SystemConfig, accountsToGenerate int) (*System, []*TestAccount, error) {
-	cfg, testAccounts, err := prepareCfgWithTestAccounts(cfg, accountsToGenerate)
+	cfg, testAccounts, _ := prepareCfgWithTestAccounts(cfg, accountsToGenerate)
 
 	// Start our system
 	sys, err := cfg.Start(t)

@@ -481,8 +481,9 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 
 	// Collect next transaction data
 	txdata, err := l.state.TxData(l1tip.ID())
+
 	if err == io.EOF {
-		l.log.Trace("no transaction data available")
+		l.log.Error("no transaction data available")
 		return err
 	} else if err != nil {
 		l.log.Error("unable to get tx data", "err", err)
