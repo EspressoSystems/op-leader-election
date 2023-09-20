@@ -534,7 +534,9 @@ func (l *BatchSubmitter) estimateGas(ctx context.Context, candidate txmgr.TxCand
 	data := candidate.TxData
 
 	if len(candidate.MethodId) >= 4 {
-		data = append(candidate.MethodId[:4], data...)
+		temp := make([]byte, 4)
+		copy(temp, candidate.MethodId[:4])
+		data = append(temp, data...)
 	}
 
 	tctx, cancel := context.WithTimeout(ctx, l.NetworkTimeout)

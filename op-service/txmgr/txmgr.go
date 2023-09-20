@@ -222,7 +222,9 @@ func (m *SimpleTxManager) craftTx(ctx context.Context, candidate TxCandidate) (*
 	data := candidate.TxData
 
 	if len(candidate.MethodId) >= 4 {
-		data = append(candidate.MethodId[:4], data...)
+		temp := make([]byte, 4)
+		copy(temp, candidate.MethodId[:4])
+		data = append(temp, data...)
 	}
 
 	rawTx := &types.DynamicFeeTx{
