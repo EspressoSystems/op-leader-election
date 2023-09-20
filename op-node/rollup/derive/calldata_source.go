@@ -191,6 +191,7 @@ func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, re
 			log.Info("SubmitAbi.ID: " + string(SubmitAbi.ID))
 
 			// Exclude transactions if L1 transaction did not call submit function.
+			// TODO uncomment
 			//if len(data) < 4 || !bytes.Equal(data[:4], SubmitAbi.ID) {
 			//	log.Warn("tx sent to inbox contract did not call submit function", "index", j)
 			//	continue // not calling submit function, ignore
