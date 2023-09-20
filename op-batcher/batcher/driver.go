@@ -401,7 +401,7 @@ func (l *BatchSubmitter) loop() {
 				l.log.Error("error checking status with leader election batch inbox")
 			}
 			if !isLeader {
-				log.Info("Batcher is not the leader")
+				// log.Info("Batcher is not the leader")
 				l.state.Clear()
 				continue
 			}

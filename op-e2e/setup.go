@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"fmt"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"math/big"
 	"net"
 	"os"
@@ -742,11 +743,12 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	}
 
 	// Batcher may be enabled later
-	// TODO depending on context do not start the single batch submitter
-	if !sys.cfg.DisableBatcher {
+	// Don't start single batcher if we are in V2
+	if !sys.cfg.DisableBatcher && sys.cfg.DeployConfig.InitialBatcherVersion == derive.BatchV1Type {
 		if err := sys.BatchSubmitter.Start(); err != nil {
 			return nil, fmt.Errorf("unable to start batch submitter: %w", err)
 		}
+		log.Info("Starting V1 single batcher ...")
 	}
 
 	return sys, nil

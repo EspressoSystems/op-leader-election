@@ -132,7 +132,7 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	})
 	require.NoError(t, err, "Sending L2 tx")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	blockNumber := receipt.BlockNumber.Uint64()
