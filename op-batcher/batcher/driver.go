@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/big"
 	_ "net/http/pprof"
+	"strconv"
 	"sync"
 	"time"
 
@@ -469,6 +470,7 @@ func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh
 
 // publishTxToL1 submits a single state tx to the L1
 func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) error {
+	log.Info("publishTxToL1 called...")
 	// send all available transactions
 	l1tip, err := l.l1Tip(ctx)
 	if err != nil {
@@ -496,6 +498,7 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 // This is a blocking method. It should not be called concurrently.
 func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) {
 	// Do the gas estimation offline. A value of 0 will cause the [txmgr] to estimate the gas limit.
+	log.Info("sendTransaction called...")
 	data := txdata.Bytes()
 
 	toAddr := &l.Rollup.BatchInboxAddress
@@ -507,6 +510,7 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		TxData:   data,
 		GasLimit: 0,
 	}
+	log.Info("l.Config.BatchInboxVersion " + strconv.Itoa(l.Config.BatchInboxVersion))
 	if l.Config.BatchInboxVersion == derive.BatchV2Type {
 		candidate.MethodId = l.submitMethodId
 		estimatedGas, err := l.estimateGas(ctx, candidate)

@@ -771,7 +771,7 @@ func genNewBatchSubmitter(sys *System, cfg SystemConfig, secret *ecdsa.PrivateKe
 			Level:  "info",
 			Format: "text",
 		},
-		//StartWithVersion: 2, // TODO remove magic number 2 + Make it a parameter to the function
+		StartWithVersion: uint64(1), // TODO remove magic number 2 + Make it a parameter to the function
 	}, sys.cfg.Loggers["batcher"], batchermetrics.NoopMetrics)
 
 	return newBatchSubmitter, err
