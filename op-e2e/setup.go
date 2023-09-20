@@ -386,6 +386,10 @@ func (sys *System) setBatchers(accounts []*TestAccount) error {
 }
 
 func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*System, error) {
+
+	log.Info("Starting from config...")
+	log.Info("cfg.Deploy.BatchInboxAddress: " + cfg.DeployConfig.BatchInboxAddress.String())
+	log.Info("cfg.Deploy.BatchInboxContractAddress: " + cfg.DeployConfig.BatchInboxContractAddress.String())
 	opts, err := NewSystemConfigOptions(_opts)
 	if err != nil {
 		return nil, err
@@ -736,6 +740,7 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	}
 
 	// Batcher may be enabled later
+	// TODO depending on context do not start the single batch submitter
 	if !sys.cfg.DisableBatcher {
 		if err := sys.BatchSubmitter.Start(); err != nil {
 			return nil, fmt.Errorf("unable to start batch submitter: %w", err)
@@ -766,6 +771,7 @@ func genNewBatchSubmitter(sys *System, cfg SystemConfig, secret *ecdsa.PrivateKe
 			Level:  "info",
 			Format: "text",
 		},
+		//StartWithVersion: 2, // TODO remove magic number 2 + Make it a parameter to the function
 	}, sys.cfg.Loggers["batcher"], batchermetrics.NoopMetrics)
 
 	return newBatchSubmitter, err

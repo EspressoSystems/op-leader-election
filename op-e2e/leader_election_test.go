@@ -92,7 +92,13 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
+
+	// TODO make a function for these two changes
 	cfg.DeployConfig.InitialBatcherVersion = derive.BatchV2Type // Test succeeds when we set derive.BatchV1Type
+	cfg.DeployConfig.BatchInboxAddress = cfg.L1Deployments.RoundRobinLeaderElectionProxy
+	cfg.DeployConfig.BatchInboxContractAddress = cfg.L1Deployments.RoundRobinLeaderElectionProxy
+	log.Info("cfg.DeployConfig.BatchInboxContractAddress", cfg.DeployConfig.BatchInboxContractAddress.String())
+
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
@@ -119,7 +125,7 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	log.Info("Sending a transaction to L2...")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	receipt := SendL2Tx(t, cfg, l2CLient, aliceKey, func(opts *TxOpts) {
 		opts.ToAddr = &cfg.Secrets.Addresses().Bob

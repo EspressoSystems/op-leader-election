@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -166,12 +167,30 @@ func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, 
 // inbox contract and did not revert.
 // This will return an empty array if no valid transactions are found.
 func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
+
+	msg := "Entering DataFromEVMTransactionsV2... with " + strconv.Itoa(txs.Len()) + " transactions"
+	log.Info(msg)
+	msg = "config.BatchInboxContractAddr: " + config.BatchInboxAddress.String()
+	log.Info(msg)
 	var out []eth.Data
 	for j, tx := range txs {
+		msg := "tx.To()= " + tx.To().String()
+		log.Info(msg)
+		msg = "config.BatchInboxContractAddr: " + config.BatchInboxContractAddr.String()
+		log.Info(msg)
 		if to := tx.To(); to != nil && *to == config.BatchInboxContractAddr {
+
+			log.Info("Trying to process L1 transactions...")
+
 			receipt := receipts[j]
 			data := tx.Data()
-			// Exclude transactions if L1 transaction did call submit function.
+			transactionHeader := data[:4]
+			log.Warn("len(data) " + strconv.Itoa(len(data)))
+			log.Info("transactionHeader: " + string(transactionHeader))
+			log.Info("transaction data: " + string(data))
+			log.Info("SubmitAbi.ID: " + string(SubmitAbi.ID))
+
+			// Exclude transactions if L1 transaction did not call submit function.
 			//if len(data) < 4 || !bytes.Equal(data[:4], SubmitAbi.ID) {
 			//	log.Warn("tx sent to inbox contract did not call submit function", "index", j)
 			//	continue // not calling submit function, ignore
@@ -182,6 +201,7 @@ func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, re
 				log.Warn("tx sent to inbox contract reverted", "index", j)
 				continue // reverted, ignore
 			}
+			log.Info("Data transaction appended:" + string(data))
 			out = append(out, data)
 		}
 	}
