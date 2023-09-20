@@ -2,6 +2,10 @@ package op_e2e
 
 import (
 	"context"
+	"github.com/ethereum-optimism/optimism/op-node/client"
+	"github.com/ethereum-optimism/optimism/op-node/sources"
+	"github.com/ethereum-optimism/optimism/op-service/eth"
+	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
 	"strconv"
 	"testing"
@@ -105,11 +109,11 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 
 	aliceKey := sys.cfg.Secrets.Alice
 
-	l2CLient := sys.Clients["sequencer"]
+	l2Client := sys.Clients["sequencer"]
 
-	//rollupRPCClient, err := rpc.DialContext(context.Background(), sys.RollupNodes["sequencer"].HTTPEndpoint())
+	rollupRPCClient, err := rpc.DialContext(context.Background(), sys.RollupNodes["sequencer"].HTTPEndpoint())
 	require.Nil(t, err)
-	//rollupClient := sources.NewRollupClient(client.NewBaseRPCClient(rollupRPCClient))
+	rollupClient := sources.NewRollupClient(client.NewBaseRPCClient(rollupRPCClient))
 
 	// Start all batchers
 	for i := 0; i < NumberOfLeaders; i++ {
@@ -122,15 +126,20 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 
 	log.Info("Sending a transaction to L2...")
 
-	receipt := SendL2Tx(t, cfg, l2CLient, aliceKey, func(opts *TxOpts) {
+	receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
 		opts.ToAddr = &cfg.Secrets.Addresses().Bob
 		opts.Value = big.NewInt(1_000)
 	})
 	require.NoError(t, err, "Sending L2 tx")
-	log.Info("block receipt:", strconv.Itoa(int(receipt.BlockNumber.Uint64())))
 
-	//ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	//defer cancel()
-	//require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	blockNumber := receipt.BlockNumber.Uint64()
+	log.Info("block receipt:", strconv.Itoa(int(blockNumber)))
+	block, err := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	log.Info("blockId:  " + eth.ToBlockID(block).String())
+
+	require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
 
 }

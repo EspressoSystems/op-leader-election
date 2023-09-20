@@ -178,7 +178,7 @@ func (s *L2Batcher) ActL2BatchSubmit(t Testing, txOpts ...func(tx *types.Dynamic
 	}
 	// Collect the output frame
 	data := new(bytes.Buffer)
-	
+
 	data.WriteByte(derive.DerivationVersion0)
 	// subtract one, to account for the version byte
 	if _, err := s.l2ChannelOut.OutputFrame(data, s.l2BatcherCfg.MaxL1TxSize-1); err == io.EOF {

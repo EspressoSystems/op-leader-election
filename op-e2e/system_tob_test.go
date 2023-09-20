@@ -157,7 +157,10 @@ func TestL2SequencerRPCDepositTx(t *testing.T) {
 	require.Error(t, err, "a DepositTx was accepted by L2 verifier over RPC when it should not have been.")
 }
 
-func prepareCfgWithTestAccounts(cfg *SystemConfig, accountsToGenerate int) (*SystemConfig, []*TestAccount, error) {
+// startConfigWithTestAccounts takes a SystemConfig, generates additional accounts, adds them to the config, so they
+// are funded on startup, starts the system, and imports the keys into the keystore, and obtains transaction opts for
+// each account.
+func startConfigWithTestAccounts(t *testing.T, cfg *SystemConfig, accountsToGenerate int) (*System, []*TestAccount, error) {
 	// Create our test accounts and add them to the pre-mine cfg.
 	testAccounts := make([]*TestAccount, 0)
 	var err error
@@ -197,14 +200,6 @@ func prepareCfgWithTestAccounts(cfg *SystemConfig, accountsToGenerate int) (*Sys
 		cfg.Premine[testAccount.Addr] = cfg.Premine[testAccount.Addr].Mul(cfg.Premine[testAccount.Addr], big.NewInt(1_000_000))
 
 	}
-	return cfg, testAccounts, err
-}
-
-// startConfigWithTestAccounts takes a SystemConfig, generates additional accounts, adds them to the config, so they
-// are funded on startup, starts the system, and imports the keys into the keystore, and obtains transaction opts for
-// each account.
-func startConfigWithTestAccounts(t *testing.T, cfg *SystemConfig, accountsToGenerate int) (*System, []*TestAccount, error) {
-	cfg, testAccounts, _ := prepareCfgWithTestAccounts(cfg, accountsToGenerate)
 
 	// Start our system
 	sys, err := cfg.Start(t)
