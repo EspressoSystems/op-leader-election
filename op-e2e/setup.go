@@ -324,7 +324,8 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 // Initialize the leaders' slots of the Leader Election Batch Inbox contract with the addresses of the batch submitters
 func (sys *System) InitLeaderBatchInboxContract(t *testing.T, accounts []*TestAccount) {
 
-	err := sys.setBatchers(accounts)
+	StartWithVersionFlag := uint64(2) // TODO make constant
+	err := sys.setBatchers(accounts, StartWithVersionFlag)
 	require.Nil(t, err)
 
 	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
@@ -366,7 +367,7 @@ func (s *SystemConfigOptions) Get(key, role string) (systemConfigHook, bool) {
 	return v, ok
 }
 
-func (sys *System) setBatchers(accounts []*TestAccount) error {
+func (sys *System) setBatchers(accounts []*TestAccount, StartWithVersionFlag uint64) error {
 	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
@@ -376,7 +377,7 @@ func (sys *System) setBatchers(accounts []*TestAccount) error {
 	}
 
 	for i := 0; i < NumberOfLeaders; i++ {
-		newBatchSubmitter, err := genNewBatchSubmitter(sys, sys.cfg, batchersSecrets[i])
+		newBatchSubmitter, err := genNewBatchSubmitter(sys, sys.cfg, batchersSecrets[i], StartWithVersionFlag)
 		if err != nil {
 			return fmt.Errorf("failed to setup batch submitters: %w", err)
 		}
@@ -731,9 +732,10 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 		return nil, fmt.Errorf("unable to start l2 output submitter: %w", err)
 	}
 
-	// Batch Submitter
+	// Unique Batch Submitter
 	secret := cfg.Secrets.Batcher
-	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret)
+	StartWithVersion := uint64(1)
+	sys.BatchSubmitter, err = genNewBatchSubmitter(sys, cfg, secret, StartWithVersion)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup batch submitter: %w", err)
@@ -750,7 +752,7 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 	return sys, nil
 }
 
-func genNewBatchSubmitter(sys *System, cfg SystemConfig, secret *ecdsa.PrivateKey) (*bss.BatchSubmitter, error) {
+func genNewBatchSubmitter(sys *System, cfg SystemConfig, secret *ecdsa.PrivateKey, StartWithVersion uint64) (*bss.BatchSubmitter, error) {
 
 	newBatchSubmitter, err := bss.NewBatchSubmitterFromCLIConfig(bss.CLIConfig{
 		L1EthRpc:               sys.EthInstances["l1"].WSEndpoint(),
@@ -771,7 +773,7 @@ func genNewBatchSubmitter(sys *System, cfg SystemConfig, secret *ecdsa.PrivateKe
 			Level:  "info",
 			Format: "text",
 		},
-		StartWithVersion: uint64(2), // TODO remove magic number 2 + Make it a parameter to the function
+		StartWithVersion: StartWithVersion,
 	}, sys.cfg.Loggers["batcher"], batchermetrics.NoopMetrics)
 
 	return newBatchSubmitter, err
