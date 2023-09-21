@@ -2,6 +2,9 @@ package op_e2e
 
 import (
 	"context"
+	"github.com/ethereum-optimism/optimism/op-node/client"
+	"github.com/ethereum-optimism/optimism/op-node/sources"
+	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
 	"strconv"
 	"testing"
@@ -37,12 +40,12 @@ func getBatchInboxContract(t *testing.T, sys *System) *bindings.LeaderElectionBa
 	return leaderElectionContract
 }
 
-//func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
-//	rollupRPCClient, err := rpc.DialContext(context.Background(), sys.RollupNodes["sequencer"].HTTPEndpoint())
-//	require.Nil(t, err)
-//	rollupClient := sources.NewRollupClient(client.NewBaseRPCClient(rollupRPCClient))
-//	return rollupClient
-//}
+func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
+	rollupRPCClient, err := rpc.DialContext(context.Background(), sys.RollupNodes["sequencer"].HTTPEndpoint())
+	require.Nil(t, err)
+	rollupClient := sources.NewRollupClient(client.NewBaseRPCClient(rollupRPCClient))
+	return rollupClient
+}
 
 func TestLeaderElectionSetup(t *testing.T) {
 	InitParallel(t)
@@ -114,7 +117,7 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 
 	l2Client := sys.Clients["sequencer"]
 
-	//rollupClient := getRollupClient(t, sys)
+	rollupClient := getRollupClient(t, sys)
 
 	// Start all batchers
 	for i := 0; i < NumberOfLeaders; i++ {
@@ -141,5 +144,5 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
 	log.Info("blockId:  " + eth.ToBlockID(block).String())
 
-	//require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
+	require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
 }
