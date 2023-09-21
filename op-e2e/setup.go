@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"fmt"
-	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"math/big"
 	"net"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -208,6 +209,12 @@ type SystemConfig struct {
 	SupportL1TimeTravel bool
 }
 
+func (sys *SystemConfig) switchToV2() {
+	sys.DisableBatcher = true
+	sys.DeployConfig.InitialBatcherVersion = derive.BatchV2Type
+	sys.DeployConfig.BatchInboxContractAddress = sys.L1Deployments.RoundRobinLeaderElectionProxy
+}
+
 type GethInstance struct {
 	Backend *geth_eth.Ethereum
 	Node    *node.Node
@@ -328,7 +335,6 @@ func (sys *System) InitLeaderBatchInboxContract(t *testing.T, accounts []*TestAc
 	StartWithVersionFlag := uint64(2) // TODO make constant
 	err := sys.setBatchers(accounts, StartWithVersionFlag)
 	require.Nil(t, err)
-
 	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 
 	for i := 0; i < NumberOfLeaders; i++ {
@@ -744,7 +750,7 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 
 	// Batcher may be enabled later
 	// Don't start single batcher if we are in V2
-	if !sys.cfg.DisableBatcher && sys.cfg.DeployConfig.InitialBatcherVersion == derive.BatchV1Type {
+	if !sys.cfg.DisableBatcher {
 		if err := sys.BatchSubmitter.Start(); err != nil {
 			return nil, fmt.Errorf("unable to start batch submitter: %w", err)
 		}
