@@ -156,7 +156,7 @@ func (s *channelManager) TxData(l1Head eth.BlockID) (txData, error) {
 	}
 
 	dataPending := firstWithFrame != nil && firstWithFrame.HasFrame()
-	s.log.Debug("Requested tx data", "l1Head", l1Head, "data_pending", dataPending, "blocks_pending", len(s.blocks))
+	s.log.Info("Requested tx data", "l1Head", l1Head, "data_pending", dataPending, "blocks_pending", len(s.blocks))
 
 	// Short circuit if there is a pending frame or the channel manager is closed.
 	if dataPending || s.closed {
