@@ -316,7 +316,7 @@ func addNewLeader(t *testing.T, sys *System, address common.Address) {
 
 	l1Client := sys.Clients["l1"]
 	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
-	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
+	log.Info("", "leaderElectionContractAddress", leaderElectionContractAddress.String())
 	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(sys.cfg.L1Deployments.RoundRobinLeaderElectionProxy, l1Client)
 	require.Nil(t, err, "Could not connect to the Leader Election Batch Inbox contract.")
 

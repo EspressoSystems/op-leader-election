@@ -34,7 +34,7 @@ func checkIsLeader(
 func getBatchInboxContract(t *testing.T, sys *System) *bindings.LeaderElectionBatchInbox {
 	// Instantiate the Leader Election Batch Inbox contract
 	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
-	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
+	log.Info("", "leaderElectionContractAddress", leaderElectionContractAddress.String())
 	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(sys.cfg.L1Deployments.RoundRobinLeaderElectionProxy, sys.Clients["l1"])
 	require.Nil(t, err)
 	return leaderElectionContract
@@ -140,7 +140,7 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 	defer cancel()
 
 	blockNumber := receipt.BlockNumber.Uint64()
-	log.Info("block receipt:", strconv.Itoa(int(blockNumber)))
+	log.Info("", "block receipt", strconv.Itoa(int(blockNumber)))
 	block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
 	log.Info("blockId:  " + eth.ToBlockID(block).String())
 
