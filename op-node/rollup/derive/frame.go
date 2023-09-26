@@ -197,7 +197,7 @@ func ParseFrames(data []byte) ([]Frame, error) {
 				return nil, fmt.Errorf("frame %d frame number does not match meta: %d != %d", i, frame.FrameNumber, meta.FrameNumber)
 			}
 
-			// TODO this makes the test fail
+			// TODO uncomment when https://github.com/EspressoSystems/op-leader-election/issues/83 is done
 			//if len(frame.Data) != int(meta.FrameDataLength) {
 			//	return nil, fmt.Errorf("frame %d frame data length does not match meta: %d != %d", i, len(frame.Data), meta.FrameDataLength)
 			//}
