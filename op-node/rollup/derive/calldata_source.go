@@ -195,12 +195,16 @@ func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, re
 			if len(data) < 4 || !bytes.Equal(data[:4], SubmitAbi.ID) {
 				log.Error("tx sent to inbox contract did not call submit function", "index", j)
 				continue // not calling submit function, ignore
+			} else {
+				log.Info("tx sent to inbox contract **did** call submit function", "index", j)
 			}
 
 			// Exclude transactions if L1 transaction reverted.
 			if receipt.Status != types.ReceiptStatusSuccessful {
-				log.Warn("tx sent to inbox contract reverted", "index", j)
+				log.Error("tx sent to inbox contract reverted", "index", j)
 				continue // reverted, ignore
+			} else {
+				log.Error("tx ok", "index", j)
 			}
 			log.Info("Data transaction appended:" + string(data))
 			out = append(out, data)

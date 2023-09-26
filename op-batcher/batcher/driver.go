@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/rlp"
 	"io"
 	"math/big"
 	_ "net/http/pprof"
@@ -20,7 +20,6 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -494,6 +493,7 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 	}
 
 	l.sendTransaction(ctx, txdata, queue, receiptsCh)
+	log.Info("Transaction sent.")
 	return nil
 }
 
@@ -527,15 +527,13 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		//	NumL2Blocks:     1,
 		//}}
 
-		var metas []bindings.LeaderElectionBatchInboxMeta
+		theabi, _ := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+		abiData, _ := theabi.Pack("submit", data)
 
-		encodedMetas, err := rlp.EncodeToBytes(metas)
-		if err != nil {
-			log.Error("Unable to encode meta information to be passed to the Inbox contract.")
-		}
+		candidate.TxData = abiData
 
 		candidate.MethodId = l.submitMethodId
-		estimatedGas, err := l.estimateGas(ctx, candidate, encodedMetas)
+		estimatedGas, err := l.estimateGas(ctx, candidate)
 		if err != nil {
 			l.log.Error("Failed to get gas estimate", "error", err.Error())
 			return
@@ -554,18 +552,17 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 	queue.Send(txdata, candidate, receiptsCh)
 }
 
-func (l *BatchSubmitter) estimateGas(ctx context.Context, candidate txmgr.TxCandidate, encodedMetas []byte) (uint64, error) {
+func (l *BatchSubmitter) estimateGas(ctx context.Context, candidate txmgr.TxCandidate) (uint64, error) {
 	data := candidate.TxData
 
 	log.Info("debug estimateGas", "len(candidate.MethodId)", len(candidate.MethodId))
 
-	if len(candidate.MethodId) >= 4 {
-		temp := make([]byte, 4)
-		copy(temp, candidate.MethodId[:4])
-		callFunctionSigAndMeta := append(temp, encodedMetas...)
-		data = append(callFunctionSigAndMeta, data...)
-		log.Info("Data submitted to inbox contract", "data", data, "len", len(data))
-	}
+	//if len(candidate.MethodId) >= 4 {
+	//	temp := make([]byte, 4)
+	//	copy(temp, candidate.MethodId[:4])
+	//	data = append(temp, data...)
+	//	log.Info("Data submitted to inbox contract", "data", data, "len", len(data))
+	//}
 
 	tctx, cancel := context.WithTimeout(ctx, l.NetworkTimeout)
 	defer cancel()

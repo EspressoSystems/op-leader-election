@@ -153,11 +153,11 @@ func ParseFrames(data []byte) ([]Frame, error) {
 	// the case, we need to decode the arguments and, later check if the meta
 	// data matches the decoded frame. Otherwise, treat it as a frame that was
 	// sent to the (non-contract) batch inbox address.
-	var metas []bindings.LeaderElectionBatchInboxMeta
+	//var metas []bindings.LeaderElectionBatchInboxMeta
 	isFromContract := len(data) >= 4 && bytes.Equal(data[:4], SubmitAbi.ID)
 	if isFromContract {
 		var err error
-		metas, data, err = ParseFramesV2(data[4:])
+		data, err = ParseFramesV2(data[4:])
 		if err != nil {
 			return nil, fmt.Errorf("parsing v2 frames: %w", err)
 		}
@@ -182,66 +182,20 @@ func ParseFrames(data []byte) ([]Frame, error) {
 		return nil, errors.New("was not able to find any frames")
 	}
 
-	// Check that the metadata matches the frames
-	if isFromContract {
-		if len(frames) != len(metas) {
-			return nil, fmt.Errorf("number of frames and metas do not match: %d != %d", len(frames), len(metas))
-		}
-		for i := range frames {
-			frame := frames[i]
-			meta := metas[i]
-			if frame.ID != meta.ChannelId {
-				return nil, fmt.Errorf("frame %d channel id does not match meta: %s != %s", i, frame.ID, meta.ChannelId)
-			}
-			if frame.FrameNumber != meta.FrameNumber {
-				return nil, fmt.Errorf("frame %d frame number does not match meta: %d != %d", i, frame.FrameNumber, meta.FrameNumber)
-			}
-			if len(frame.Data) != int(meta.FrameDataLength) {
-				return nil, fmt.Errorf("frame %d frame data length does not match meta: %d != %d", i, len(frame.Data), meta.FrameDataLength)
-			}
-			if frame.IsLast != meta.IsLast {
-				return nil, fmt.Errorf("frame %d isLast does not match meta: %t != %t", i, frame.IsLast, meta.IsLast)
-			}
-		}
-	}
-
 	return frames, nil
 }
 
-func ParseFramesV2(data []byte) ([]bindings.LeaderElectionBatchInboxMeta, []byte, error) {
+func ParseFramesV2(data []byte) ([]byte, error) {
 
 	decoded, err := SubmitAbi.Inputs.Unpack(data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not decode data: %w", err)
-	}
-
-	anonMetas, ok := decoded[0].([]struct {
-		ChannelId       [16]uint8 `json:"channelId"`
-		FrameNumber     uint16    `json:"frameNumber"`
-		FrameDataLength uint32    `json:"frameDataLength"`
-		IsLast          bool      `json:"isLast"`
-		NumL2Blocks     uint16    `json:"numL2Blocks"`
-	})
-	if !ok {
-		return nil, nil, fmt.Errorf("could not decode metas")
-	}
-
-	metas := make([]bindings.LeaderElectionBatchInboxMeta, len(anonMetas))
-
-	for i, anonMeta := range anonMetas {
-		metas[i] = bindings.LeaderElectionBatchInboxMeta{
-			ChannelId:       anonMeta.ChannelId,
-			FrameNumber:     anonMeta.FrameNumber,
-			FrameDataLength: anonMeta.FrameDataLength,
-			IsLast:          anonMeta.IsLast,
-			NumL2Blocks:     anonMeta.NumL2Blocks,
-		}
+		return nil, fmt.Errorf("could not decode data: %w", err)
 	}
 
 	frames, ok := decoded[1].([]byte)
 	if !ok {
-		return nil, nil, fmt.Errorf("could not decode frames")
+		return nil, fmt.Errorf("could not decode frames")
 	}
 
-	return metas, frames, nil
+	return frames, nil
 }
