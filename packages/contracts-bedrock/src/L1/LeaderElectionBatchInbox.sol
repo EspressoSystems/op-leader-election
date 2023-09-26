@@ -35,9 +35,9 @@ abstract contract LeaderElectionBatchInbox {
     ///         Implementations of this contract interface can enforce behaviour based on the metadata submitted
     ///         to this function.
     ///
+    /// @param _metas metadata for the frames.
     /// @param _frames frames to be submitted.
-    // TODO readd documentation for metas
-    function submit(bytes calldata _frames) external {
+    function submit(Meta[] memory _metas, bytes calldata _frames) external {
         // TODO: pass metadata to isCurrentLeader
         bool isLeader = this.isCurrentLeader(msg.sender, block.number);
         require(isLeader, "LeaderElectionBatchInbox: submit function must be called by the leader.");

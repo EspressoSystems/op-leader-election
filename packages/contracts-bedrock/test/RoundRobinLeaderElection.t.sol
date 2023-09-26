@@ -75,15 +75,11 @@ contract RoundRobinLeaderElectionTest is Test {
         vm.expectRevert("LeaderElectionBatchInbox: submit function must be called by the leader.");
 
         LeaderElectionBatchInbox.Meta[] memory metas = new LeaderElectionBatchInbox.Meta[](1);
-        // TODO readd frames
-        //leaderContract.submit(metas, "frames");
-        leaderContract.submit("frames");
+        leaderContract.submit(metas, "frames");
 
         // Correct leader, does not revert
         vm.prank(vm.addr(1));
-        // TODO readd frames
-        //leaderContract.submit(metas, "frames");
-        leaderContract.submit("frames");
+        leaderContract.submit(metas, "frames");
     }
 
     function test_nextBlocksAsLeader_success() external {

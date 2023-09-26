@@ -519,17 +519,18 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 	log.Info("l.Config.BatchInboxVersion " + strconv.Itoa(l.Config.BatchInboxVersion))
 	if l.Config.BatchInboxVersion == derive.BatchV2Type {
 
-		// TODO put the right values
-		//metas := []bindings.LeaderElectionBatchInboxMeta{bindings.LeaderElectionBatchInboxMeta{
-		//	ChannelId:       [16]byte(make([]byte, 16)),
-		//	FrameNumber:     uint16(1),
-		//	FrameDataLength: uint32(1),
-		//	IsLast:          true,
-		//	NumL2Blocks:     1,
-		//}}
+		meta := bindings.LeaderElectionBatchInboxMeta{
+			ChannelId:       txdata.ID().chID,
+			FrameNumber:     txdata.ID().frameNumber,
+			FrameDataLength: uint32(txdata.Len()),
+			IsLast:          false,
+			NumL2Blocks:     1,
+		}
+
+		metas := []bindings.LeaderElectionBatchInboxMeta{meta}
 
 		theabi, _ := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
-		abiData, err := theabi.Pack("submit", data)
+		abiData, err := theabi.Pack("submit", metas, data)
 		if err != nil {
 			log.Error("Problem when computing abi bytes", "err", err.Error())
 		} else {

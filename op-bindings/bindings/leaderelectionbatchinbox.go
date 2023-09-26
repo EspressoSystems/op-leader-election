@@ -28,9 +28,18 @@ var (
 	_ = event.NewSubscription
 )
 
+// LeaderElectionBatchInboxMeta is an auto generated low-level Go binding around an user-defined struct.
+type LeaderElectionBatchInboxMeta struct {
+	ChannelId       [16]byte
+	FrameNumber     uint16
+	FrameDataLength uint32
+	IsLast          bool
+	NumL2Blocks     uint16
+}
+
 // LeaderElectionBatchInboxMetaData contains all meta data concerning the LeaderElectionBatchInbox contract.
 var LeaderElectionBatchInboxMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"addParticipant\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"creation_block_number\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"_frames\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"addParticipant\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"creation_block_number\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes16\",\"name\":\"channelId\",\"type\":\"bytes16\"},{\"internalType\":\"uint16\",\"name\":\"frameNumber\",\"type\":\"uint16\"},{\"internalType\":\"uint32\",\"name\":\"frameDataLength\",\"type\":\"uint32\"},{\"internalType\":\"bool\",\"name\":\"isLast\",\"type\":\"bool\"},{\"internalType\":\"uint16\",\"name\":\"numL2Blocks\",\"type\":\"uint16\"}],\"internalType\":\"structLeaderElectionBatchInbox.Meta[]\",\"name\":\"_metas\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes\",\"name\":\"_frames\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // LeaderElectionBatchInboxABI is the input ABI used to generate the binding from.
@@ -294,23 +303,23 @@ func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactorSession) AddP
 	return _LeaderElectionBatchInbox.Contract.AddParticipant(&_LeaderElectionBatchInbox.TransactOpts, _addr)
 }
 
-// Submit is a paid mutator transaction binding the contract method 0xef7fa71b.
+// Submit is a paid mutator transaction binding the contract method 0xc2e41e5c.
 //
-// Solidity: function submit(bytes _frames) returns()
-func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactor) Submit(opts *bind.TransactOpts, _frames []byte) (*types.Transaction, error) {
-	return _LeaderElectionBatchInbox.contract.Transact(opts, "submit", _frames)
+// Solidity: function submit((bytes16,uint16,uint32,bool,uint16)[] _metas, bytes _frames) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactor) Submit(opts *bind.TransactOpts, _metas []LeaderElectionBatchInboxMeta, _frames []byte) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.contract.Transact(opts, "submit", _metas, _frames)
 }
 
-// Submit is a paid mutator transaction binding the contract method 0xef7fa71b.
+// Submit is a paid mutator transaction binding the contract method 0xc2e41e5c.
 //
-// Solidity: function submit(bytes _frames) returns()
-func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) Submit(_frames []byte) (*types.Transaction, error) {
-	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.TransactOpts, _frames)
+// Solidity: function submit((bytes16,uint16,uint32,bool,uint16)[] _metas, bytes _frames) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) Submit(_metas []LeaderElectionBatchInboxMeta, _frames []byte) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.TransactOpts, _metas, _frames)
 }
 
-// Submit is a paid mutator transaction binding the contract method 0xef7fa71b.
+// Submit is a paid mutator transaction binding the contract method 0xc2e41e5c.
 //
-// Solidity: function submit(bytes _frames) returns()
-func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactorSession) Submit(_frames []byte) (*types.Transaction, error) {
-	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.TransactOpts, _frames)
+// Solidity: function submit((bytes16,uint16,uint32,bool,uint16)[] _metas, bytes _frames) returns()
+func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactorSession) Submit(_metas []LeaderElectionBatchInboxMeta, _frames []byte) (*types.Transaction, error) {
+	return _LeaderElectionBatchInbox.Contract.Submit(&_LeaderElectionBatchInbox.TransactOpts, _metas, _frames)
 }
