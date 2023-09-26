@@ -172,6 +172,9 @@ func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*typ
 	receipt, err := m.send(ctx, candidate)
 	if err != nil {
 		m.resetNonce()
+		m.l.Error("SimpleTxManager.Send", "error", err.Error())
+	} else {
+		m.l.Info("SimpleTxManager.Send", "receipt status", receipt.Status)
 	}
 	return receipt, err
 }
