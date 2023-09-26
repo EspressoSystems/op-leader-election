@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core"
 	"io"
 	"math/big"
 	_ "net/http/pprof"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core"
 
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
@@ -528,19 +529,26 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		//}}
 
 		theabi, _ := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
-		abiData, _ := theabi.Pack("submit", data)
+		abiData, err := theabi.Pack("submit", data)
+		if err != nil {
+			log.Error("Problem when computing abi bytes", "err", err.Error())
+		} else {
+			log.Info("Abi bytes computation successful")
+		}
 
 		candidate.TxData = abiData
 
 		candidate.MethodId = l.submitMethodId
 		estimatedGas, err := l.estimateGas(ctx, candidate)
+		log.Info("Gas", "estimatedGas", estimatedGas)
 		if err != nil {
 			l.log.Error("Failed to get gas estimate", "error", err.Error())
 			return
 		} else {
-			l.log.Info("Gas estimate successfull!")
+			l.log.Info("Gas estimate successful!")
 		}
 		candidate.GasLimit = estimatedGas
+		log.Info("Candidate transaction", "gas limit", candidate.GasLimit)
 	} else {
 		intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
 		if err != nil {
@@ -555,24 +563,11 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 func (l *BatchSubmitter) estimateGas(ctx context.Context, candidate txmgr.TxCandidate) (uint64, error) {
 	data := candidate.TxData
 
-	log.Info("debug estimateGas", "len(candidate.MethodId)", len(candidate.MethodId))
-
-	//if len(candidate.MethodId) >= 4 {
-	//	temp := make([]byte, 4)
-	//	copy(temp, candidate.MethodId[:4])
-	//	data = append(temp, data...)
-	//	log.Info("Data submitted to inbox contract", "data", data, "len", len(data))
-	//}
-
 	tctx, cancel := context.WithTimeout(ctx, l.NetworkTimeout)
 	defer cancel()
 
-	// TODO is this the right address?
-	from := l.TxManager.From()
-
-	log.Info("Sending tx debugging", "from", from)
 	return l.Config.L1Client.EstimateGas(tctx, ethereum.CallMsg{
-		From: from,
+		From: l.TxManager.From(),
 		To:   &l.Rollup.BatchInboxContractAddr,
 		Data: data,
 	})

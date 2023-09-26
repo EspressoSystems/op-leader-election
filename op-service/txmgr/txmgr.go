@@ -192,7 +192,7 @@ func (m *SimpleTxManager) send(ctx context.Context, candidate TxCandidate) (*typ
 	tx, err := retry.Do(ctx, 30, retry.Fixed(2*time.Second), func() (*types.Transaction, error) {
 		tx, err := m.craftTx(ctx, candidate)
 		if err != nil {
-			m.l.Warn("Failed to create a transaction, will retry", "err", err)
+			m.l.Error("Failed to create a transaction, will retry", "err", err)
 		}
 		return tx, err
 	})
@@ -221,12 +221,6 @@ func (m *SimpleTxManager) craftTx(ctx context.Context, candidate TxCandidate) (*
 	}
 
 	data := candidate.TxData
-
-	if len(candidate.MethodId) >= 4 {
-		temp := make([]byte, 4)
-		copy(temp, candidate.MethodId[:4])
-		data = append(temp, data...)
-	}
 
 	rawTx := &types.DynamicFeeTx{
 		ChainID:   m.chainID,

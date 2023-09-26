@@ -202,11 +202,10 @@ func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, re
 			// Exclude transactions if L1 transaction reverted.
 			if receipt.Status != types.ReceiptStatusSuccessful {
 				log.Error("tx sent to inbox contract reverted", "index", j)
+				log.Error("Receipt", "logs", receipt.Logs, "status", receipt.Status)
 				continue // reverted, ignore
-			} else {
-				log.Error("tx ok", "index", j)
 			}
-			log.Info("Data transaction appended:" + string(data))
+
 			out = append(out, data)
 		}
 	}
