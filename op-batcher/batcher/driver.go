@@ -407,7 +407,7 @@ func (l *BatchSubmitter) loop() {
 				l.state.Clear()
 				continue
 			}
-			log.Info("Batcher is the leader")
+			log.Info("Batcher is the leader", "address", l.TxManager.From())
 			if err := l.loadBlocksIntoState(l.shutdownCtx); errors.Is(err, ErrReorg) {
 				err := l.state.Close()
 				if err != nil {

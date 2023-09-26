@@ -164,6 +164,7 @@ type TxCandidate struct {
 //
 // NOTE: Send can be called concurrently, the nonce will be managed internally.
 func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*types.Receipt, error) {
+	log.Info("SimpleTxManager address", "address", m.From())
 	m.metr.RecordPendingTx(m.pending.Add(1))
 	defer func() {
 		m.metr.RecordPendingTx(m.pending.Add(-1))
