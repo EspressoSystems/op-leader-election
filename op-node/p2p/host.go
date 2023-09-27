@@ -7,7 +7,13 @@ import (
 	"sync"
 	"time"
 
-	libp2p "github.com/libp2p/go-libp2p"
+	//nolint:all
+	"github.com/libp2p/go-libp2p"
+
+	//nolint:all
+	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
+
+	mplex "github.com/libp2p/go-libp2p-mplex"
 	lconf "github.com/libp2p/go-libp2p/config"
 	"github.com/libp2p/go-libp2p/core/connmgr"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -16,8 +22,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/sec/insecure"
 	basichost "github.com/libp2p/go-libp2p/p2p/host/basic"
-	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
-	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	tls "github.com/libp2p/go-libp2p/p2p/security/tls"

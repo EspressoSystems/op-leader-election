@@ -167,22 +167,30 @@ func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, 
 // inbox contract and did not revert.
 // This will return an empty array if no valid transactions are found.
 func DataFromEVMTransactionsV2(config *rollup.Config, txs types.Transactions, receipts types.Receipts, log log.Logger) []eth.Data {
+
 	var out []eth.Data
 	for j, tx := range txs {
+
 		if to := tx.To(); to != nil && *to == config.BatchInboxContractAddr {
+
 			receipt := receipts[j]
 			data := tx.Data()
-			// Exclude transactions if L1 transaction did call submit function.
+
+			// Exclude transactions if L1 transaction did not call submit function.
 			if len(data) < 4 || !bytes.Equal(data[:4], SubmitAbi.ID) {
 				log.Warn("tx sent to inbox contract did not call submit function", "index", j)
 				continue // not calling submit function, ignore
+			} else {
+				log.Warn("tx sent to inbox contract **did** call submit function", "index", j)
 			}
 
 			// Exclude transactions if L1 transaction reverted.
 			if receipt.Status != types.ReceiptStatusSuccessful {
-				log.Warn("tx sent to inbox contract reverted", "index", j)
+				log.Error("tx sent to inbox contract reverted", "index", j)
+				log.Error("Receipt", "logs", receipt.Logs, "status", receipt.Status)
 				continue // reverted, ignore
 			}
+
 			out = append(out, data)
 		}
 	}
