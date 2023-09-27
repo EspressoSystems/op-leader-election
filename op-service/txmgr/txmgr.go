@@ -164,7 +164,7 @@ type TxCandidate struct {
 //
 // NOTE: Send can be called concurrently, the nonce will be managed internally.
 func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*types.Receipt, error) {
-	log.Info("SimpleTxManager address", "address", m.From())
+
 	m.metr.RecordPendingTx(m.pending.Add(1))
 	defer func() {
 		m.metr.RecordPendingTx(m.pending.Add(-1))
@@ -172,9 +172,7 @@ func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*typ
 	receipt, err := m.send(ctx, candidate)
 	if err != nil {
 		m.resetNonce()
-		m.l.Error("SimpleTxManager.Send", "error", err.Error())
-	} else {
-		m.l.Info("SimpleTxManager.Send", "receipt status", receipt.Status)
+		m.l.Warn("SimpleTxManager.Send", "error", err.Error())
 	}
 	return receipt, err
 }

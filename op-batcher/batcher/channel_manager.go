@@ -80,7 +80,7 @@ func (s *channelManager) TxFailed(id txID) {
 		delete(s.txChannels, id)
 		channel.TxFailed(id)
 		if s.closed && channel.NoneSubmitted() {
-			s.log.Info("Channel has no submitted transactions, clearing for shutdown", "chID", channel.ID())
+			s.log.Debug("Channel has no submitted transactions, clearing for shutdown", "chID", channel.ID())
 			s.removePendingChannel(channel)
 		}
 	} else {

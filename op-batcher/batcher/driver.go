@@ -7,7 +7,6 @@ import (
 	"io"
 	"math/big"
 	_ "net/http/pprof"
-	"strconv"
 	"sync"
 	"time"
 
@@ -332,23 +331,11 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherIsLeaderStatus() (bool, error
 		return l.isLeader, nil
 	}
 
-	//sysConf, err := bindings.NewSystemConfigCaller(l.Rollup.L1SystemConfigAddress, l.L1Client)
-	//if err == nil {
-	//	batcherHash, err := sysConf.BatcherHash(&bind.CallOpts{BlockNumber: big.NewInt(int64(l1tip.Number)), Context: l.shutdownCtx})
-	//	if err == nil {
-	//		if batcherHash[0] == derive.BatchV1Type {
-	//			l.Config.BatchInboxVersion = derive.BatchV1Type
-	//		} else if batcherHash[0] == derive.BatchV2Type {
-	//			l.Config.BatchInboxVersion = derive.BatchV2Type
-	//		}
-	//	}
-	//}
-
 	if l.Config.BatchInboxVersion == derive.BatchV1Type {
 		return true, nil
 	}
 
-	l.log.Info("BatchV2Type activated")
+	//l.log.Info("BatchV2Type activated")
 
 	lebi, err := bindings.NewLeaderElectionBatchInboxCaller(l.Rollup.BatchInboxContractAddr, l.L1Client)
 	if err != nil {
@@ -395,7 +382,7 @@ func (l *BatchSubmitter) loop() {
 
 	receiptsCh := make(chan txmgr.TxReceipt[txData])
 	queue := txmgr.NewQueue[txData](l.killCtx, l.txMgr, l.MaxPendingTransactions)
-	log.Info("Entering batch submitter loop")
+	log.Warn("Entering batch submitter loop")
 	for {
 		select {
 		case <-ticker.C:
@@ -408,11 +395,11 @@ func (l *BatchSubmitter) loop() {
 				l.state.Clear()
 				continue
 			}
-			log.Info("Batcher is the leader", "address", l.TxManager.From())
+			log.Warn("Batcher is the leader", "address", l.TxManager.From())
 			if err := l.loadBlocksIntoState(l.shutdownCtx); errors.Is(err, ErrReorg) {
 				err := l.state.Close()
 				if err != nil {
-					l.log.Error("error closing the channel manager to handle a L2 reorg", "err", err)
+					l.log.Warn("error closing the channel manager to handle a L2 reorg", "err", err)
 				}
 				l.publishStateToL1(queue, receiptsCh, true)
 				l.state.Clear()
@@ -424,7 +411,7 @@ func (l *BatchSubmitter) loop() {
 		case <-l.shutdownCtx.Done():
 			err := l.state.Close()
 			if err != nil {
-				l.log.Error("error closing the channel manager", "err", err)
+				l.log.Warn("error closing the channel manager", "err", err)
 			}
 			l.publishStateToL1(queue, receiptsCh, true)
 			return
@@ -436,7 +423,7 @@ func (l *BatchSubmitter) loop() {
 // submits the associated data to the L1 in the form of channel frames.
 func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData], drain bool) {
 
-	log.Info("Publishing state to L1...")
+	log.Warn("Publishing state to L1...")
 	txDone := make(chan struct{})
 	// send/wait and receipt reading must be on a separate goroutines to avoid deadlocks
 	go func() {
@@ -457,7 +444,7 @@ func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh
 				return
 			}
 
-			log.Info("Transaction published to L1")
+			log.Warn("Transaction published to L1")
 		}
 	}()
 
@@ -473,7 +460,7 @@ func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh
 
 // publishTxToL1 submits a single state tx to the L1
 func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) error {
-	log.Info("publishTxToL1 called...")
+	log.Warn("publishTxToL1 called...")
 	// send all available transactions
 	l1tip, err := l.l1Tip(ctx)
 	if err != nil {
@@ -489,12 +476,12 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 		l.log.Warn("no transaction data available")
 		return err
 	} else if err != nil {
-		l.log.Error("unable to get tx data", "err", err)
+		l.log.Warn("unable to get tx data", "err", err)
 		return err
 	}
 
 	l.sendTransaction(ctx, txdata, queue, receiptsCh)
-	log.Info("Transaction sent.")
+	log.Warn("Transaction sent.")
 	return nil
 }
 
@@ -503,7 +490,7 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 // This is a blocking method. It should not be called concurrently.
 func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) {
 	// Do the gas estimation offline. A value of 0 will cause the [txmgr] to estimate the gas limit.
-	log.Info("sendTransaction called...")
+	log.Warn("sendTransaction called...")
 	data := txdata.Bytes()
 
 	toAddr := &l.Rollup.BatchInboxAddress
@@ -516,7 +503,6 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		GasLimit: 0,
 	}
 
-	log.Info("l.Config.BatchInboxVersion " + strconv.Itoa(l.Config.BatchInboxVersion))
 	if l.Config.BatchInboxVersion == derive.BatchV2Type {
 
 		meta := bindings.LeaderElectionBatchInboxMeta{
@@ -534,22 +520,22 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		if err != nil {
 			log.Error("Problem when computing abi bytes", "err", err.Error())
 		} else {
-			log.Info("Abi bytes computation successful")
+			log.Warn("Abi bytes computation successful")
 		}
 
 		candidate.TxData = abiData
 
 		candidate.MethodId = l.submitMethodId
 		estimatedGas, err := l.estimateGas(ctx, candidate)
-		log.Info("Gas", "estimatedGas", estimatedGas)
+		log.Warn("Gas", "estimatedGas", estimatedGas)
 		if err != nil {
 			l.log.Error("Failed to get gas estimate", "error", err.Error())
 			return
 		} else {
-			l.log.Info("Gas estimate successful!")
+			l.log.Warn("Gas estimate successful!")
 		}
 		candidate.GasLimit = estimatedGas
-		log.Info("Candidate transaction", "gas limit", candidate.GasLimit)
+
 	} else {
 		intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
 		if err != nil {
@@ -581,7 +567,7 @@ func (l *BatchSubmitter) handleReceipt(r txmgr.TxReceipt[txData]) {
 		l.log.Warn("unable to publish tx", "err", r.Err, "data_size", r.ID.Len())
 		l.recordFailedTx(r.ID.ID(), r.Err)
 	} else {
-		l.log.Info("tx successfully published", "tx_hash", r.Receipt.TxHash, "data_size", r.ID.Len())
+		l.log.Warn("tx successfully published", "tx_hash", r.Receipt.TxHash, "data_size", r.ID.Len())
 		l.recordConfirmedTx(r.ID.ID(), r.Receipt)
 	}
 }
