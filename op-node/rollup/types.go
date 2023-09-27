@@ -76,6 +76,10 @@ type Config struct {
 	// Active if RegolithTime != nil && L2 block timestamp >= *RegolithTime, inactive otherwise.
 	RegolithTime *uint64 `json:"regolith_time,omitempty"`
 
+	// CanyonTime  sets the activation time of the next network upgrade.
+	// Active if CanyonTime != nil && L2 block timestamp >= *CanyonTime, inactive otherwise.
+	CanyonTime *uint64 `json:"canyon_time,omitempty"`
+
 	// Note: below addresses are part of the block-derivation process,
 	// and required to be the same network-wide to stay in consensus.
 
@@ -87,6 +91,9 @@ type Config struct {
 	L1SystemConfigAddress common.Address `json:"l1_system_config_address"`
 	// Initial L1 deployed contract that batches are sent to after batcher V2
 	BatchInboxContractAddr common.Address `json:"batch_inbox_contract_address"`
+
+	// L1 address that declares the protocol versions, optional (Beta feature)
+	ProtocolVersionsAddress common.Address `json:"protocol_versions_address,omitempty"`
 }
 
 // ValidateL1Config checks L1 config variables for errors.
@@ -262,6 +269,11 @@ func (c *Config) IsRegolith(timestamp uint64) bool {
 	return c.RegolithTime != nil && timestamp >= *c.RegolithTime
 }
 
+// IsCanyon returns true if the Canyon hardfork is active at or past the given timestamp.
+func (c *Config) IsCanyon(timestamp uint64) bool {
+	return c.CanyonTime != nil && timestamp >= *c.CanyonTime
+}
+
 // Description outputs a banner describing the important parts of rollup configuration in a human-readable form.
 // Optionally provide a mapping of L2 chain IDs to network names to label the L2 chain with if not unknown.
 // The config should be config.Check()-ed before creating a description.
@@ -289,6 +301,9 @@ func (c *Config) Description(l2Chains map[string]string) string {
 	// Report the upgrade configuration
 	banner += "Post-Bedrock Network Upgrades (timestamp based):\n"
 	banner += fmt.Sprintf("  - Regolith: %s\n", fmtForkTimeOrUnset(c.RegolithTime))
+	banner += fmt.Sprintf("  - Canyon: %s\n", fmtForkTimeOrUnset(c.CanyonTime))
+	// Report the protocol version
+	banner += fmt.Sprintf("Node supports up to OP-Stack Protocol Version: %s\n", OPStackSupport)
 	return banner
 }
 
@@ -311,7 +326,8 @@ func (c *Config) LogDescription(log log.Logger, l2Chains map[string]string) {
 	log.Info("Rollup Config", "l2_chain_id", c.L2ChainID, "l2_network", networkL2, "l1_chain_id", c.L1ChainID,
 		"l1_network", networkL1, "l2_start_time", c.Genesis.L2Time, "l2_block_hash", c.Genesis.L2.Hash.String(),
 		"l2_block_number", c.Genesis.L2.Number, "l1_block_hash", c.Genesis.L1.Hash.String(),
-		"l1_block_number", c.Genesis.L1.Number, "regolith_time", fmtForkTimeOrUnset(c.RegolithTime))
+		"l1_block_number", c.Genesis.L1.Number, "regolith_time", fmtForkTimeOrUnset(c.RegolithTime),
+		"canyon_time", fmtForkTimeOrUnset(c.CanyonTime))
 }
 
 func fmtForkTimeOrUnset(v *uint64) string {

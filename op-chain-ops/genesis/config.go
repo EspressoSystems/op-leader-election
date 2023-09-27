@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-
 	"reflect"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -16,6 +15,7 @@ import (
 	gstate "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/ethereum-optimism/optimism/op-bindings/hardhat"
@@ -209,6 +209,12 @@ type DeployConfig struct {
 	LeaderElectionNumberOfSlotsPerLeader uint64 `json:"leaderElectionNumberOfSlotsPerLeader"`
 	// Batcher version at time of deployment
 	InitialBatcherVersion int `json:"initialBatcherVersion"`
+	// RequiredProtocolVersion indicates the protocol version that
+	// nodes are required to adopt, to stay in sync with the network.
+	RequiredProtocolVersion params.ProtocolVersion `json:"requiredProtocolVersion"`
+	// RequiredProtocolVersion indicates the protocol version that
+	// nodes are recommended to adopt, to stay in sync with the network.
+	RecommendedProtocolVersion params.ProtocolVersion `json:"recommendedProtocolVersion"`
 }
 
 // Copy will deeply copy the DeployConfig. This does a JSON roundtrip to copy
@@ -323,7 +329,7 @@ func (d *DeployConfig) Check() error {
 	}
 	// When the initial resource config is made to be configurable by the DeployConfig, ensure
 	// that this check is updated to use the values from the DeployConfig instead of the defaults.
-	if uint64(d.L2GenesisBlockGasLimit) < uint64(defaultResourceConfig.MaxResourceLimit+defaultResourceConfig.SystemTxMaxGas) {
+	if uint64(d.L2GenesisBlockGasLimit) < uint64(DefaultResourceConfig.MaxResourceLimit+DefaultResourceConfig.SystemTxMaxGas) {
 		return fmt.Errorf("%w: L2 genesis block gas limit is too small", ErrInvalidDeployConfig)
 	}
 	if d.L2GenesisBlockBaseFeePerGas == nil {
@@ -540,6 +546,8 @@ type L1Deployments struct {
 	ProxyAdmin                        common.Address `json:"ProxyAdmin"`
 	SystemConfig                      common.Address `json:"SystemConfig"`
 	SystemConfigProxy                 common.Address `json:"SystemConfigProxy"`
+	ProtocolVersions                  common.Address `json:"ProtocolVersions"`
+	ProtocolVersionsProxy             common.Address `json:"ProtocolVersionsProxy"`
 }
 
 // GetName will return the name of the contract given an address.

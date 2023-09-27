@@ -36,6 +36,11 @@ func NewConfig(ctx *cli.Context, log log.Logger) (*node.Config, error) {
 		return nil, err
 	}
 
+	if !ctx.Bool(flags.RollupLoadProtocolVersions.Name) {
+		log.Info("Not opted in to ProtocolVersions signal loading, disabling ProtocolVersions contract now.")
+		rollupConfig.ProtocolVersionsAddress = common.Address{}
+	}
+
 	configPersistence := NewConfigPersistence(ctx)
 
 	driverConfig := NewDriverConfig(ctx)
@@ -60,6 +65,11 @@ func NewConfig(ctx *cli.Context, log log.Logger) (*node.Config, error) {
 	l2SyncEndpoint := NewL2SyncEndpointConfig(ctx)
 
 	syncConfig := NewSyncConfig(ctx)
+
+	haltOption := ctx.String(flags.RollupHalt.Name)
+	if haltOption == "none" {
+		haltOption = ""
+	}
 
 	cfg := &node.Config{
 		L1:     l1Endpoint,
@@ -93,6 +103,7 @@ func NewConfig(ctx *cli.Context, log log.Logger) (*node.Config, error) {
 		},
 		ConfigPersistence: configPersistence,
 		Sync:              *syncConfig,
+		RollupHalt:        haltOption,
 	}
 
 	if err := cfg.LoadPersisted(log); err != nil {
@@ -191,6 +202,10 @@ Conflicting configuration is deprecated, and will stop the op-node from starting
 		if err != nil {
 			return nil, err
 		}
+		if ctx.IsSet(flags.CanyonOverrideFlag.Name) {
+			canyon := ctx.Uint64(flags.CanyonOverrideFlag.Name)
+			config.CanyonTime = &canyon
+		}
 
 		return config, nil
 	}
@@ -204,6 +219,10 @@ Conflicting configuration is deprecated, and will stop the op-node from starting
 	var rollupConfig rollup.Config
 	if err := json.NewDecoder(file).Decode(&rollupConfig); err != nil {
 		return nil, fmt.Errorf("failed to decode rollup config: %w", err)
+	}
+	if ctx.IsSet(flags.CanyonOverrideFlag.Name) {
+		canyon := ctx.Uint64(flags.CanyonOverrideFlag.Name)
+		rollupConfig.CanyonTime = &canyon
 	}
 	return &rollupConfig, nil
 }

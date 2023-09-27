@@ -36,5 +36,10 @@
   "BlockOracle",
   "EAS",
   "SchemaRegistry",
-  "LeaderElectionBatchInbox"
+  "LeaderElectionBatchInbox",
+  "ProtocolVersions",
+  "Safe",
+  "SafeProxyFactory",
+  "DelayedVetoable",
+  "ISemver"
 ]
