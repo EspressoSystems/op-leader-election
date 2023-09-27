@@ -9,7 +9,7 @@ import (
 	suite "github.com/stretchr/testify/suite"
 
 	log "github.com/ethereum/go-ethereum/log"
-
+	//nolint:all
 	p2p "github.com/ethereum-optimism/optimism/op-node/p2p"
 	p2pMocks "github.com/ethereum-optimism/optimism/op-node/p2p/mocks"
 	"github.com/ethereum-optimism/optimism/op-node/p2p/store"

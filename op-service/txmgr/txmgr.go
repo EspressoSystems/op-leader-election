@@ -164,6 +164,7 @@ type TxCandidate struct {
 //
 // NOTE: Send can be called concurrently, the nonce will be managed internally.
 func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*types.Receipt, error) {
+
 	m.metr.RecordPendingTx(m.pending.Add(1))
 	defer func() {
 		m.metr.RecordPendingTx(m.pending.Add(-1))
@@ -171,6 +172,7 @@ func (m *SimpleTxManager) Send(ctx context.Context, candidate TxCandidate) (*typ
 	receipt, err := m.send(ctx, candidate)
 	if err != nil {
 		m.resetNonce()
+		m.l.Warn("SimpleTxManager.Send", "error", err.Error())
 	}
 	return receipt, err
 }
@@ -191,7 +193,7 @@ func (m *SimpleTxManager) send(ctx context.Context, candidate TxCandidate) (*typ
 	tx, err := retry.Do(ctx, 30, retry.Fixed(2*time.Second), func() (*types.Transaction, error) {
 		tx, err := m.craftTx(ctx, candidate)
 		if err != nil {
-			m.l.Warn("Failed to create a transaction, will retry", "err", err)
+			m.l.Error("Failed to create a transaction, will retry", "err", err)
 		}
 		return tx, err
 	})
@@ -215,10 +217,6 @@ func (m *SimpleTxManager) craftTx(ctx context.Context, candidate TxCandidate) (*
 	gasFeeCap := calcGasFeeCap(basefee, gasTipCap)
 
 	data := candidate.TxData
-
-	if len(candidate.MethodId) >= 4 {
-		data = append(candidate.MethodId[:4], data...)
-	}
 
 	rawTx := &types.DynamicFeeTx{
 		ChainID:   m.chainID,

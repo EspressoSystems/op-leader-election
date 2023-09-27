@@ -2,10 +2,16 @@ package op_e2e
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"math/big"
+	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ethereum-optimism/optimism/op-node/client"
+	"github.com/ethereum-optimism/optimism/op-node/sources"
+	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/ethereum-optimism/optimism/op-service/eth"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -24,6 +30,22 @@ func checkIsLeader(
 	isLeader, err := contract.IsCurrentLeader(&bind.CallOpts{}, address, blockNumber)
 	require.Nil(t, err)
 	require.True(t, isLeader)
+}
+
+func getBatchInboxContract(t *testing.T, sys *System) *bindings.LeaderElectionBatchInbox {
+	// Instantiate the Leader Election Batch Inbox contract
+	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
+	log.Info("", "leaderElectionContractAddress", leaderElectionContractAddress.String())
+	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(sys.cfg.L1Deployments.RoundRobinLeaderElectionProxy, sys.Clients["l1"])
+	require.Nil(t, err)
+	return leaderElectionContract
+}
+
+func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
+	rollupRPCClient, err := rpc.DialContext(context.Background(), sys.RollupNodes["sequencer"].HTTPEndpoint())
+	require.Nil(t, err)
+	rollupClient := sources.NewRollupClient(client.NewBaseRPCClient(rollupRPCClient))
+	return rollupClient
 }
 
 func TestLeaderElectionSetup(t *testing.T) {
@@ -49,19 +71,9 @@ func TestLeaderElectionSetup(t *testing.T) {
 	l1Client := sys.Clients["l1"]
 
 	// Instantiate the Leader Election Batch Inbox contract
-	leaderElectionContractAddress := sys.cfg.L1Deployments.RoundRobinLeaderElection
-	log.Info("leaderElectionContractAddress: %s", leaderElectionContractAddress.String())
-	leaderElectionContract, err := bindings.NewLeaderElectionBatchInbox(cfg.L1Deployments.RoundRobinLeaderElectionProxy, l1Client)
-	require.Nil(t, err)
+	leaderElectionContract := getBatchInboxContract(t, sys)
 
-	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
-	batchersSecrets := make([]*ecdsa.PrivateKey, 0, NumberOfLeaders)
-	for i := 0; i < NumberOfLeaders; i++ {
-		batchersSecrets = append(batchersSecrets, accounts[i].Key)
-	}
-	err = sys.setBatchers(batchersSecrets)
-	require.Nil(t, err)
-	sys.InitLeaderBatchInboxContract(t)
+	sys.InitLeaderBatchInboxContract(t, accounts)
 
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
 	blockNumberOfBatchInboxContractDeployment, err := leaderElectionContract.CreationBlockNumber(&bind.CallOpts{})
@@ -82,4 +94,56 @@ func TestLeaderElectionSetup(t *testing.T) {
 			checkIsLeader(t, leaderElectionContract, batcherAddress, big.NewInt(int64(blockNumber)))
 		}
 	}
+}
+
+func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
+	InitParallel(t)
+
+	cfg := DefaultSystemConfig(t)
+
+	cfg.switchToV2()
+
+	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
+	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
+
+	require.Nil(t, err, "Error starting up system")
+	defer sys.Close()
+
+	sys.InitLeaderBatchInboxContract(t, accounts)
+
+	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
+
+	aliceKey := sys.cfg.Secrets.Alice
+
+	l2Client := sys.Clients["sequencer"]
+
+	rollupClient := getRollupClient(t, sys)
+
+	// Start all batchers
+	for i := 0; i < NumberOfLeaders; i++ {
+		err = sys.BatchSubmitters[i].Start()
+		require.Nil(t, err)
+	}
+
+	// Waiting for the batchers to be up
+	time.Sleep(5 * time.Second)
+
+	log.Info("Sending a transaction to L2...")
+
+	receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
+		opts.ToAddr = &cfg.Secrets.Addresses().Bob
+		opts.Value = big.NewInt(1_000)
+	})
+	require.NoError(t, err, "Sending L2 tx")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	blockNumber := receipt.BlockNumber.Uint64()
+	log.Info("", "block receipt", strconv.Itoa(int(blockNumber)))
+	block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	log.Info("blockId:  " + eth.ToBlockID(block).String())
+
+	require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
 }

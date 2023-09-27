@@ -10,6 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/core"
+
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
@@ -17,8 +20,6 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -134,7 +135,7 @@ func NewBatchSubmitter(ctx context.Context, cfg Config, l log.Logger, m metrics.
 	cfg.metr = m
 
 	var submitMethodId []byte
-	if cfg.BatchInboxAbi == nil {
+	if cfg.BatchInboxAbi != nil {
 		biAbi, err := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
 		if err != nil {
 			return nil, err
@@ -330,21 +331,11 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherIsLeaderStatus() (bool, error
 		return l.isLeader, nil
 	}
 
-	sysConf, err := bindings.NewSystemConfigCaller(l.Rollup.L1SystemConfigAddress, l.L1Client)
-	if err == nil {
-		batcherHash, err := sysConf.BatcherHash(&bind.CallOpts{BlockNumber: big.NewInt(int64(l1tip.Number)), Context: l.shutdownCtx})
-		if err == nil {
-			if batcherHash[0] == derive.BatchV1Type {
-				l.Config.BatchInboxVersion = derive.BatchV1Type
-			} else if batcherHash[0] == derive.BatchV2Type {
-				l.Config.BatchInboxVersion = derive.BatchV2Type
-			}
-		}
-	}
-
 	if l.Config.BatchInboxVersion == derive.BatchV1Type {
 		return true, nil
 	}
+
+	//l.log.Info("BatchV2Type activated")
 
 	lebi, err := bindings.NewLeaderElectionBatchInboxCaller(l.Rollup.BatchInboxContractAddr, l.L1Client)
 	if err != nil {
@@ -391,7 +382,7 @@ func (l *BatchSubmitter) loop() {
 
 	receiptsCh := make(chan txmgr.TxReceipt[txData])
 	queue := txmgr.NewQueue[txData](l.killCtx, l.txMgr, l.MaxPendingTransactions)
-
+	log.Warn("Entering batch submitter loop")
 	for {
 		select {
 		case <-ticker.C:
@@ -400,13 +391,15 @@ func (l *BatchSubmitter) loop() {
 				l.log.Error("error checking status with leader election batch inbox")
 			}
 			if !isLeader {
+				log.Warn("Batcher is not the leader")
 				l.state.Clear()
 				continue
 			}
+			log.Warn("Batcher is the leader", "address", l.TxManager.From())
 			if err := l.loadBlocksIntoState(l.shutdownCtx); errors.Is(err, ErrReorg) {
 				err := l.state.Close()
 				if err != nil {
-					l.log.Error("error closing the channel manager to handle a L2 reorg", "err", err)
+					l.log.Warn("error closing the channel manager to handle a L2 reorg", "err", err)
 				}
 				l.publishStateToL1(queue, receiptsCh, true)
 				l.state.Clear()
@@ -418,7 +411,7 @@ func (l *BatchSubmitter) loop() {
 		case <-l.shutdownCtx.Done():
 			err := l.state.Close()
 			if err != nil {
-				l.log.Error("error closing the channel manager", "err", err)
+				l.log.Warn("error closing the channel manager", "err", err)
 			}
 			l.publishStateToL1(queue, receiptsCh, true)
 			return
@@ -429,6 +422,8 @@ func (l *BatchSubmitter) loop() {
 // publishStateToL1 loops through the block data loaded into `state` and
 // submits the associated data to the L1 in the form of channel frames.
 func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData], drain bool) {
+
+	log.Warn("Publishing state to L1...")
 	txDone := make(chan struct{})
 	// send/wait and receipt reading must be on a separate goroutines to avoid deadlocks
 	go func() {
@@ -441,12 +436,15 @@ func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh
 		}()
 		for {
 			err := l.publishTxToL1(l.killCtx, queue, receiptsCh)
+
 			if err != nil {
 				if drain && err != io.EOF {
 					l.log.Error("error sending tx while draining state", "err", err)
 				}
 				return
 			}
+
+			log.Warn("Transaction published to L1")
 		}
 	}()
 
@@ -462,6 +460,7 @@ func (l *BatchSubmitter) publishStateToL1(queue *txmgr.Queue[txData], receiptsCh
 
 // publishTxToL1 submits a single state tx to the L1
 func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) error {
+	log.Warn("publishTxToL1 called...")
 	// send all available transactions
 	l1tip, err := l.l1Tip(ctx)
 	if err != nil {
@@ -472,15 +471,17 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 
 	// Collect next transaction data
 	txdata, err := l.state.TxData(l1tip.ID())
+
 	if err == io.EOF {
-		l.log.Trace("no transaction data available")
+		l.log.Warn("no transaction data available")
 		return err
 	} else if err != nil {
-		l.log.Error("unable to get tx data", "err", err)
+		l.log.Warn("unable to get tx data", "err", err)
 		return err
 	}
 
 	l.sendTransaction(ctx, txdata, queue, receiptsCh)
+	log.Warn("Transaction sent.")
 	return nil
 }
 
@@ -489,6 +490,7 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 // This is a blocking method. It should not be called concurrently.
 func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, queue *txmgr.Queue[txData], receiptsCh chan txmgr.TxReceipt[txData]) {
 	// Do the gas estimation offline. A value of 0 will cause the [txmgr] to estimate the gas limit.
+	log.Warn("sendTransaction called...")
 	data := txdata.Bytes()
 
 	toAddr := &l.Rollup.BatchInboxAddress
@@ -500,14 +502,40 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		TxData:   data,
 		GasLimit: 0,
 	}
+
 	if l.Config.BatchInboxVersion == derive.BatchV2Type {
+
+		meta := bindings.LeaderElectionBatchInboxMeta{
+			ChannelId:       txdata.ID().chID,
+			FrameNumber:     txdata.ID().frameNumber,
+			FrameDataLength: uint32(txdata.Len()),
+			IsLast:          false,
+			NumL2Blocks:     1,
+		}
+
+		metas := []bindings.LeaderElectionBatchInboxMeta{meta}
+
+		theabi, _ := bindings.LeaderElectionBatchInboxMetaData.GetAbi()
+		abiData, err := theabi.Pack("submit", metas, data)
+		if err != nil {
+			log.Error("Problem when computing abi bytes", "err", err.Error())
+		} else {
+			log.Warn("Abi bytes computation successful")
+		}
+
+		candidate.TxData = abiData
+
 		candidate.MethodId = l.submitMethodId
 		estimatedGas, err := l.estimateGas(ctx, candidate)
+		log.Warn("Gas", "estimatedGas", estimatedGas)
 		if err != nil {
-			l.log.Error("Failed to get gas estimate", "error", err)
+			l.log.Error("Failed to get gas estimate", "error", err.Error())
 			return
+		} else {
+			l.log.Warn("Gas estimate successful!")
 		}
 		candidate.GasLimit = estimatedGas
+
 	} else {
 		intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
 		if err != nil {
@@ -522,14 +550,11 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 func (l *BatchSubmitter) estimateGas(ctx context.Context, candidate txmgr.TxCandidate) (uint64, error) {
 	data := candidate.TxData
 
-	if len(candidate.MethodId) >= 4 {
-		data = append(candidate.MethodId[:4], data...)
-	}
-
 	tctx, cancel := context.WithTimeout(ctx, l.NetworkTimeout)
 	defer cancel()
 
 	return l.Config.L1Client.EstimateGas(tctx, ethereum.CallMsg{
+		From: l.TxManager.From(),
 		To:   &l.Rollup.BatchInboxContractAddr,
 		Data: data,
 	})
@@ -542,7 +567,7 @@ func (l *BatchSubmitter) handleReceipt(r txmgr.TxReceipt[txData]) {
 		l.log.Warn("unable to publish tx", "err", r.Err, "data_size", r.ID.Len())
 		l.recordFailedTx(r.ID.ID(), r.Err)
 	} else {
-		l.log.Info("tx successfully published", "tx_hash", r.Receipt.TxHash, "data_size", r.ID.Len())
+		l.log.Warn("tx successfully published", "tx_hash", r.Receipt.TxHash, "data_size", r.ID.Len())
 		l.recordConfirmedTx(r.ID.ID(), r.Receipt)
 	}
 }

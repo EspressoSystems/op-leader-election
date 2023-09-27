@@ -48,7 +48,7 @@
   "faultGameMaxDepth": 30,
   "faultGameMaxDuration": 1200,
   "systemConfigStartBlock": 0,
-  "leaderElectionNumberOfLeaders": 4,
+  "leaderElectionNumberOfLeaders": 3,
   "leaderElectionNumberOfSlotsPerLeader":4,
   "initialBatcherVersion": 0,
   "requiredProtocolVersion": "0x0000000000000000000000000000000000000000000000000000000000000000",

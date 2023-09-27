@@ -42,7 +42,7 @@ func (fq *FrameQueue) NextFrame(ctx context.Context) (Frame, error) {
 			if new, err := ParseFrames(data); err == nil {
 				fq.frames = append(fq.frames, new...)
 			} else {
-				fq.log.Warn("Failed to parse frames", "origin", fq.prev.Origin(), "err", err)
+				fq.log.Error("Failed to parse frames", "origin", fq.prev.Origin(), "err", err)
 			}
 		}
 	}
