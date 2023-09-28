@@ -343,6 +343,24 @@ func (sys *System) InitLeaderBatchInboxContract(t *testing.T, accounts []*TestAc
 	}
 }
 
+func (sys *System) SetBatchInboxToV2(t *testing.T) {
+	l1Client := sys.Clients["l1"]
+
+	// change gas limit on L1 to triple what it was
+	sysCfgContract, err := bindings.NewSystemConfig(sys.RollupConfig.L1SystemConfigAddress, l1Client)
+	require.NoError(t, err)
+
+	sysCfgOwner, err := bind.NewKeyedTransactorWithChainID(sys.cfg.Secrets.SysCfgOwner, sys.RollupConfig.L1ChainID)
+	require.NoError(t, err)
+
+	v2BatcherHash := [32]byte{}
+	v2BatcherHash[0] = 1 // BatchV2Type
+
+	_, err = sysCfgContract.SetBatcherHash(sysCfgOwner, v2BatcherHash)
+	require.NoError(t, err)
+
+}
+
 type systemConfigHook func(sCfg *SystemConfig, s *System)
 
 type SystemConfigOption struct {
