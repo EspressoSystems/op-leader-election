@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/ethereum-optimism/optimism/op-node/client"
 	"github.com/ethereum-optimism/optimism/op-node/sources"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -96,7 +98,9 @@ func TestLeaderElectionSetup(t *testing.T) {
 	}
 }
 
-func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
+// This test covers https://github.com/EspressoSystems/op-leader-election/issues/58 and https://github.com/EspressoSystems/op-leader-election/issues/59
+// It instantiates a single batcher (the first one out of three) and creates two L2 blocks that are correctly submitted to L1 by this batcher
+func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
@@ -120,30 +124,44 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 
 	rollupClient := getRollupClient(t, sys)
 
-	// Start all batchers
-	for i := 0; i < NumberOfLeaders; i++ {
-		err = sys.BatchSubmitters[i].Start()
-		require.Nil(t, err)
-	}
+	// Start only the first batcher so that we are sure the same batcher is able to publish two L2 blocks
+	err = sys.BatchSubmitters[0].Start()
+	require.Nil(t, err)
 
 	// Waiting for the batchers to be up
-	time.Sleep(5 * time.Second)
+	time.Sleep(3 * time.Second)
 
-	log.Info("Sending a transaction to L2...")
+	log.Info("Sending transactions to L2...")
 
-	receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
-		opts.ToAddr = &cfg.Secrets.Addresses().Bob
-		opts.Value = big.NewInt(1_000)
-	})
-	require.NoError(t, err, "Sending L2 tx")
+	var receipts []*types.Receipt
+
+	numTxs := 2
+	for i := 0; i < numTxs; i++ {
+		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
+			opts.ToAddr = &cfg.Secrets.Addresses().Bob
+			opts.Nonce = uint64(i)
+			opts.Value = big.NewInt(1_000)
+		})
+		receipts = append(receipts, receipt)
+		require.NoError(t, err, "Sending L2 tx")
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	blockNumber := receipt.BlockNumber.Uint64()
-	log.Info("", "block receipt", strconv.Itoa(int(blockNumber)))
-	block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-	log.Info("blockId:  " + eth.ToBlockID(block).String())
+	previousBlockNumber := uint64(0)
+	blockNumber := uint64(0)
+	for i := 0; i < numTxs; i++ {
+		receipt := receipts[i]
+		previousBlockNumber = blockNumber
+		log.Info("", "previous block number", strconv.Itoa(int(previousBlockNumber)))
+		blockNumber = receipt.BlockNumber.Uint64()
 
-	require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
+		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
+		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+		log.Info("blockId:  " + eth.ToBlockID(block).String())
+		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
+	}
+	// Ensure that the batcher was able to push two consecutive blocks
+	require.Equal(t, blockNumber-previousBlockNumber, uint64(1))
 }
