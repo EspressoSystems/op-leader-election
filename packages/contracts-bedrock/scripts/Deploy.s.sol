@@ -900,27 +900,31 @@ contract Deploy is Deployer {
 
     /// @notice Initialize the RoundRobinLeaderElectionContract
     function initializeRoundRobinLeaderElection() public broadcast {
-        ProxyAdmin proxyAdmin = ProxyAdmin(mustGetAddress("ProxyAdmin"));
-        address batchInboxProxy = mustGetAddress("RoundRobinLeaderElectionProxy");
-        address batchInbox = mustGetAddress("RoundRobinLeaderElection");
+        address roundRobinLeaderElectionProxy = mustGetAddress("RoundRobinLeaderElectionProxy");
+        address roundRobinLeaderElection = mustGetAddress("RoundRobinLeaderElection");
+
+        address finalSystemOwner = cfg.finalSystemOwner();
         uint256 maxNumberOfParticipants = cfg.leaderElectionNumberOfLeaders();
         uint256 numberOfSlotsPerLeader = cfg.leaderElectionNumberOfSlotsPerLeader();
 
-        proxyAdmin.upgradeAndCall({
-            _proxy: payable(batchInboxProxy),
-            _implementation: batchInbox,
-            _data: abi.encodeCall(
+        _upgradeAndCallViaSafe({
+            _proxy: payable(roundRobinLeaderElectionProxy),
+            _implementation: roundRobinLeaderElection,
+            _innerCallData: abi.encodeCall(
                 RoundRobinLeaderElection.initialize,
-                (cfg.finalSystemOwner(), maxNumberOfParticipants, numberOfSlotsPerLeader)
+                (
+                    finalSystemOwner,
+                    maxNumberOfParticipants,
+                    numberOfSlotsPerLeader
+                )
                 )
         });
 
-        RoundRobinLeaderElection inbox = RoundRobinLeaderElection(payable(batchInboxProxy));
+        RoundRobinLeaderElection inbox = RoundRobinLeaderElection(payable(roundRobinLeaderElectionProxy));
         string memory version = inbox.version();
         console.log("RoundRobinLeaderElection version: %s", version);
 
         // TODO: check that the RoundRobinLeaderElection contract is initialized correctly
-
     }
 
     function initializeProtocolVersions() public onlyTestnetOrDevnet broadcast {
