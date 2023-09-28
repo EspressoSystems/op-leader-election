@@ -906,10 +906,10 @@ contract Deploy is Deployer {
         uint256 maxNumberOfParticipants = cfg.leaderElectionNumberOfLeaders();
         uint256 numberOfSlotsPerLeader = cfg.leaderElectionNumberOfSlotsPerLeader();
 
-        proxyAdmin.upgradeAndCall({
+        _upgradeAndCallViaSafe({
             _proxy: payable(batchInboxProxy),
             _implementation: batchInbox,
-            _data: abi.encodeCall(
+            _innerCallData: abi.encodeCall(
                 RoundRobinLeaderElection.initialize,
                 (cfg.finalSystemOwner(), maxNumberOfParticipants, numberOfSlotsPerLeader)
                 )

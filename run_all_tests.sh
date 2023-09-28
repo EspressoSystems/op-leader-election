@@ -24,7 +24,7 @@ for dir in $(find . -mindepth 1 -maxdepth 1 -type d | sort); do
     if [ -f "$dir/Makefile" ]; then
         if has-recipe "$dir" "lint"; then
             # Skip some directories because lint fails.
-            for exclude in "op-exporter" "op-ufm"; do
+            for exclude in "op-exporter" "op-ufm" "op-node"; do
                 if [ "$dir" = "./$exclude" ]; then
                     echo "Skipping lint: $dir"
                     continue 2
