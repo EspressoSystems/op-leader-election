@@ -911,12 +911,7 @@ contract Deploy is Deployer {
             _proxy: payable(roundRobinLeaderElectionProxy),
             _implementation: roundRobinLeaderElection,
             _innerCallData: abi.encodeCall(
-                RoundRobinLeaderElection.initialize,
-                (
-                    finalSystemOwner,
-                    maxNumberOfParticipants,
-                    numberOfSlotsPerLeader
-                )
+                RoundRobinLeaderElection.initialize, (finalSystemOwner, maxNumberOfParticipants, numberOfSlotsPerLeader)
                 )
         });
 
