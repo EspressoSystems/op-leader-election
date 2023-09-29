@@ -11,9 +11,6 @@ import (
 	//nolint:all
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
 
-	//nolint:all
-	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
-
 	p2pMocks "github.com/ethereum-optimism/optimism/op-node/p2p/mocks"
 	"github.com/ethereum-optimism/optimism/op-node/p2p/store"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
