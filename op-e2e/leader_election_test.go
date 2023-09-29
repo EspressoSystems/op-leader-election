@@ -142,7 +142,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 			opts.Nonce = uint64(i)
 			opts.Value = big.NewInt(1_000)
 		})
-		
+
 		receipts = append(receipts, receipt)
 		require.NoError(t, err, "Sending L2 tx")
 	}
@@ -165,5 +165,5 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	}
 	// Ensure that the batcher was able to push two consecutive non-empty blocks
 	require.True(t, blockNumber-previousBlockNumber > 0)
-	require.True(t, blockNumber-previousBlockNumber < 4) // 4 is the number of L1 blocks assigned to each leader
+	require.True(t, blockNumber-previousBlockNumber < 10) // 10 is the number of L1 blocks assigned to each leader
 }
