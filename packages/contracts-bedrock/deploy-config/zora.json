@@ -17,6 +17,7 @@
   "channelTimeout": 300,
   "p2pSequencerAddress": "0x3Dc8Dfd0709C835cAd15a6A27e089FF4cF4C9228",
   "batchInboxAddress": "0x6F54Ca6F6EdE96662024Ffd61BFd18f3f4e34DFf",
+  "batchInboxContractAddress": "0xff00000000000000000000000000000011155420",
   "batchSenderAddress": "0x625726c858dBF78c0125436C943Bf4b4bE9d9033",
   "l2GenesisRegolithTimeOffset": "0x0",
   "portalGuardian": "0xC72aE5c7cc9a332699305E29F68Be66c73b60542",
