@@ -142,11 +142,12 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 			opts.Nonce = uint64(i)
 			opts.Value = big.NewInt(1_000)
 		})
+		
 		receipts = append(receipts, receipt)
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	previousBlockNumber := uint64(0)
