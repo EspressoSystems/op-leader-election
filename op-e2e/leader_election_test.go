@@ -162,6 +162,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 		log.Info("blockId:  " + eth.ToBlockID(block).String())
 		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 	}
-	// Ensure that the batcher was able to push two consecutive blocks
-	require.Equal(t, blockNumber-previousBlockNumber, uint64(1))
+	// Ensure that the batcher was able to push two consecutive non-empty blocks
+	require.True(t, blockNumber-previousBlockNumber > 0)
+	require.True(t, blockNumber-previousBlockNumber < 4) // 4 is the number of L1 blocks assigned to each leader
 }
