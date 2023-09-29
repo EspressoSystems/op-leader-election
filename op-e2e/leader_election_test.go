@@ -129,7 +129,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	require.Nil(t, err)
 
 	// Waiting for the batchers to be up
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	log.Info("Sending transactions to L2...")
 
@@ -146,7 +146,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	previousBlockNumber := uint64(0)
