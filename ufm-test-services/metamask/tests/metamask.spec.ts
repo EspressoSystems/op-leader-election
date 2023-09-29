@@ -1,17 +1,28 @@
 import 'dotenv/config'
+import { z } from 'zod'
 import metamask from '@synthetixio/synpress/commands/metamask.js'
 import { expect, test, type Page } from '@playwright/test'
 import { mnemonicToAccount, privateKeyToAccount } from 'viem/accounts'
 
 import { testWithSynpress } from './testWithSynpressUtil'
+import {
+  incrementMetamaskTxCounter,
+  setMetamaskTxCounter,
+} from './prometheusUtils'
+
+const env = z.object({
+  METAMASK_SECRET_WORDS_OR_PRIVATEKEY: z.string(),
+  METAMASK_OP_GOERLI_RPC_URL: z.string().url(),
+  METAMASK_DAPP_URL: z.string().url()
+}).parse(process.env)
 
 const expectedSender =
-  process.env.METAMASK_SECRET_WORDS_OR_PRIVATEKEY?.startsWith('0x')
+  env.METAMASK_SECRET_WORDS_OR_PRIVATEKEY?.startsWith('0x')
     ? privateKeyToAccount(
-        process.env.METAMASK_SECRET_WORDS_OR_PRIVATEKEY as `0x${string}`
+        env.METAMASK_SECRET_WORDS_OR_PRIVATEKEY as `0x${string}`
       ).address.toLowerCase()
     : mnemonicToAccount(
-        process.env.METAMASK_SECRET_WORDS_OR_PRIVATEKEY as string
+        env.METAMASK_SECRET_WORDS_OR_PRIVATEKEY as string
       ).address.toLowerCase()
 const expectedRecipient = '0x8fcfbe8953433fd1f2e8375ee99057833e4e1e9e'
 
@@ -24,18 +35,21 @@ test.afterAll(async () => {
 })
 
 testWithSynpress('Setup wallet and dApp', async ({ page }) => {
+  console.log('Seting up wallet and dApp...')
   sharedPage = page
   await sharedPage.goto('http://localhost:9011')
+  console.log('Setup wallet and dApp')
 })
 
 testWithSynpress('Add OP Goerli network', async () => {
+  console.log('Adding OP Goerli network...')
   const expectedChainId = '0x1a4'
 
   await metamask.addNetwork({
     name: 'op-goerli',
     rpcUrls: {
       default: {
-        http: [process.env.OP_GOERLI_RPC_URL],
+        http: [env.METAMASK_OP_GOERLI_RPC_URL],
       },
     },
     id: '420',
@@ -49,16 +63,33 @@ testWithSynpress('Add OP Goerli network', async () => {
     },
   })
 
-  await expect(sharedPage.locator('#chainId')).toHaveText(expectedChainId)
+  try {
+    await expect(sharedPage.locator('#chainId')).toHaveText(expectedChainId)
+  } catch (error) {
+    await setMetamaskTxCounter(true, 0)
+    await incrementMetamaskTxCounter(false)
+    throw error
+  }
+  console.log('Added OP Goerli network')
 })
 
 test(`Connect wallet with ${expectedSender}`, async () => {
+  console.log(`Connecting wallet with ${expectedSender}...`)
   await sharedPage.click('#connectButton')
   await metamask.acceptAccess()
-  await expect(sharedPage.locator('#accounts')).toHaveText(expectedSender)
+
+  try {
+    await expect(sharedPage.locator('#accounts')).toHaveText(expectedSender)
+  } catch (error) {
+    await setMetamaskTxCounter(true, 0)
+    await incrementMetamaskTxCounter(false)
+    throw error
+  }
+  console.log(`Connected wallet with ${expectedSender}`)
 })
 
 test('Send an EIP-1559 transaciton and verfiy success', async () => {
+  console.log('Sending an EIP-1559 transaciton and verfiy success...')
   const expectedTransferAmount = '0x1'
   const expectedTxType = '0x2'
 
@@ -76,17 +107,14 @@ test('Send an EIP-1559 transaciton and verfiy success', async () => {
     })
   })
 
-  await metamask.confirmTransaction()
+  await metamask.confirmTransactionAndWaitForMining()
   const txHash = await txHashPromise
-
-    // Waiting for Infura (Metamask given provider) to index our transaction
-    await sharedPage.waitForTimeout(10_000)
 
   // Metamask test dApp allows us access to the Metamask RPC provider via loading this URL.
   // The RPC reponse will be populated onto the page that's loaded.
   // More info here: https://github.com/MetaMask/test-dapp/tree/main#usage
   await sharedPage.goto(
-    `${process.env.METAMASK_DAPP_URL}/request.html?method=eth_getTransactionReceipt&params=["${txHash}"]`
+    `${env.METAMASK_DAPP_URL}/request.html?method=eth_getTransactionReceipt&params=["${txHash}"]`
   )
 
   // Waiting for RPC response to be populated on the page
@@ -98,5 +126,15 @@ test('Send an EIP-1559 transaciton and verfiy success', async () => {
       ''
     )
   )
-  expect(transaction.status).toBe('0x1')
+
+  try {
+    expect(transaction.status).toBe('0x1')
+    await setMetamaskTxCounter(false, 0)
+    await incrementMetamaskTxCounter(true)
+  } catch (error) {
+    await setMetamaskTxCounter(true, 0)
+    await incrementMetamaskTxCounter(false)
+    throw error
+  }
+  console.log('Sent an EIP-1559 transaciton and verfied success')
 })

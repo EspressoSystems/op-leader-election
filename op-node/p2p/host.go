@@ -8,11 +8,9 @@ import (
 	"time"
 
 	//nolint:all
-	"github.com/libp2p/go-libp2p"
-
-	//nolint:all
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
 
+	libp2p "github.com/libp2p/go-libp2p"
 	mplex "github.com/libp2p/go-libp2p-mplex"
 	lconf "github.com/libp2p/go-libp2p/config"
 	"github.com/libp2p/go-libp2p/core/connmgr"
