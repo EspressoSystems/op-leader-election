@@ -10,7 +10,7 @@
 
   outputs = { self, flake-utils, nixpkgs, foundry, ... }:
     let
-      goVersion = 20; # Change this to update the whole stack
+      goVersion = 21; # Change this to update the whole stack
       overlays = [
         (final: prev: {
           go = prev."go_1_${toString goVersion}";
@@ -28,7 +28,7 @@
         pkgs = import nixpkgs {
           inherit overlays system;
           config = {
-            permittedInsecurePackages = [ "nodejs-16.20.1" ];
+            permittedInsecurePackages = [ "nodejs-16.20.2" ];
           };
         };
       in
@@ -39,7 +39,7 @@
             # goimports, godoc, etc.
             gotools
             # https://github.com/golangci/golangci-lint
-            golangci-lint
+            (golangci-lint.override { buildGoModule = buildGo121Module; })
 
             # Node
             nodejs
