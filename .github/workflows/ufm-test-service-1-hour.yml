@@ -3,7 +3,7 @@ name: 'UFM Test Service: 1 hour'
 on:
   schedule:
     # Run every hour
-    - cron: '0 * * * *'
+    #- cron: '0 * * * *'
 
 jobs:
   ufm_test_service_metamask:
