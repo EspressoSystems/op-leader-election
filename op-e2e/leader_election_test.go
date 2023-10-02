@@ -224,3 +224,80 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 	require.Error(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 
 }
+
+func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
+	InitParallel(t)
+
+	cfg := DefaultSystemConfig(t)
+
+	cfg.switchToV2()
+
+	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
+	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
+
+	require.Nil(t, err, "Error starting up system")
+	defer sys.Close()
+
+	sys.InitLeaderBatchInboxContract(t, accounts)
+
+	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
+
+	aliceKey := sys.cfg.Secrets.Alice
+
+	l2Client := sys.Clients["sequencer"]
+
+	rollupClient := getRollupClient(t, sys)
+
+	// Start all the batchers
+	for i := 0; i < NumberOfLeaders; i++ {
+		err = sys.BatchSubmitters[i].Start()
+		require.Nil(t, err)
+	}
+	// Waiting for the batchers to be up
+	time.Sleep(5 * time.Second)
+
+	log.Info("Sending transactions to L2...")
+
+	var receipts []*types.Receipt
+
+	numTxs := 7
+	for i := 0; i < numTxs; i++ {
+		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
+			opts.ToAddr = &cfg.Secrets.Addresses().Bob
+			opts.Nonce = uint64(i)
+			opts.Value = big.NewInt(1_000)
+		})
+
+		receipts = append(receipts, receipt)
+		require.NoError(t, err, "Sending L2 tx")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	minBlockNumber := uint64(1000) // Very high value to start with
+	maxBlockNumber := uint64(0)
+	for i := 0; i < numTxs; i++ {
+		receipt := receipts[i]
+
+		blockNumber := receipt.BlockNumber.Uint64()
+		// Update min and max block numbers
+		if blockNumber > maxBlockNumber {
+			maxBlockNumber = blockNumber
+		}
+
+		if blockNumber < minBlockNumber {
+			minBlockNumber = blockNumber
+		}
+
+		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
+		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+		log.Info("blockId:  " + eth.ToBlockID(block).String())
+		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
+	}
+	// The gap between the min and max block number should cover 4 epochs at least
+	log.Info("", "maxBlockNumber-minBlockNumber", maxBlockNumber-minBlockNumber)
+	require.True(t, maxBlockNumber-minBlockNumber >= 4)
+
+}
