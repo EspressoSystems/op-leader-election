@@ -167,3 +167,60 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	require.True(t, blockNumber-previousBlockNumber > 0)
 	require.True(t, blockNumber-previousBlockNumber < 10) // 10 is the number of L1 blocks assigned to each leader
 }
+
+func TestLeaderElectionWrongBatcher(t *testing.T) {
+	InitParallel(t)
+
+	cfg := DefaultSystemConfig(t)
+
+	cfg.switchToV2()
+
+	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
+
+	// We generate one extra batcher that will be the wrong one
+	numBatchers := NumberOfLeaders + 1
+	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, numBatchers)
+
+	require.Nil(t, err, "Error starting up system")
+	defer sys.Close()
+
+	require.Equal(t, len(accounts), numBatchers)
+	sys.InitLeaderBatchInboxContract(t, accounts)
+	require.Equal(t, len(sys.BatchSubmitters), numBatchers)
+
+	aliceKey := sys.cfg.Secrets.Alice
+
+	l2Client := sys.Clients["sequencer"]
+
+	rollupClient := getRollupClient(t, sys)
+
+	// Start the wrong batcher only to prove it cannot produce blocks
+	wrongBatcher := sys.BatchSubmitters[numBatchers-1]
+	require.Equal(t, wrongBatcher.Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
+	err = wrongBatcher.Start()
+	require.Nil(t, err)
+
+	// Waiting for the wrong batcher to be up
+	time.Sleep(5 * time.Second)
+
+	log.Info("Sending transaction to L2...")
+
+	receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
+		opts.ToAddr = &cfg.Secrets.Addresses().Bob
+		opts.Value = big.NewInt(1_000)
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	blockNumber := receipt.BlockNumber.Uint64()
+
+	log.Info("", "block number", strconv.Itoa(int(blockNumber)))
+	block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	log.Info("blockId:  " + eth.ToBlockID(block).String())
+
+	// The block is not produced
+	require.Error(t, waitForSafeHead(ctx, blockNumber, rollupClient))
+
+}

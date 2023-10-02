@@ -375,15 +375,15 @@ func (s *SystemConfigOptions) Get(key, role string) (systemConfigHook, bool) {
 }
 
 func (sys *System) setBatchers(accounts []*TestAccount, StartWithVersionFlag uint64) error {
-	NumberOfLeaders := int(sys.cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	NumBatchers := len(accounts)
 
 	// Initialize the Leader Election Batch Inbox contract with the addresses of the Batchers
-	batchersSecrets := make([]*ecdsa.PrivateKey, 0, NumberOfLeaders)
-	for i := 0; i < NumberOfLeaders; i++ {
+	batchersSecrets := make([]*ecdsa.PrivateKey, 0, NumBatchers)
+	for i := 0; i < NumBatchers; i++ {
 		batchersSecrets = append(batchersSecrets, accounts[i].Key)
 	}
 
-	for i := 0; i < NumberOfLeaders; i++ {
+	for i := 0; i < NumBatchers; i++ {
 		newBatchSubmitter, err := genNewBatchSubmitter(sys, sys.cfg, batchersSecrets[i], StartWithVersionFlag)
 		if err != nil {
 			return fmt.Errorf("failed to setup batch submitters: %w", err)
