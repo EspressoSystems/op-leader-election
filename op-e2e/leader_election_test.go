@@ -306,7 +306,7 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 
 }
 
-// We produce several blocks, everything should go through despite the presence of a wrong batcher and the absence of a good one.
+// We produce several blocks, everything should go through despite the presence of a wrong batcher replacing a good one
 func TestMixOfGoodAndBadBatchers(t *testing.T) {
 	InitParallel(t)
 
