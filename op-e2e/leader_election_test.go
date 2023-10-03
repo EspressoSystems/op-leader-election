@@ -277,12 +277,12 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
 	minBlockNumber := uint64(1000) // Very high value to start with
 	maxBlockNumber := uint64(0)
 	for i := 0; i < numTxs; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
 		receipt := receipts[i]
 
 		blockNumber := receipt.BlockNumber.Uint64()
@@ -364,11 +364,11 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer cancel()
-
 	// All the blocks should be processed correctly
 	for i := 0; i < numTxs; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+		defer cancel()
+
 		receipt := receipts[i]
 
 		blockNumber := receipt.BlockNumber.Uint64()
@@ -433,11 +433,10 @@ func TestMissingGoodBatcher(t *testing.T) {
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second) // TODO constant across all tests
-	defer cancel()
-
 	// All the blocks should be processed correctly
 	for i := 0; i < numTxs; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second) // TODO constant across all tests
+		defer cancel()
 		receipt := receipts[i]
 
 		blockNumber := receipt.BlockNumber.Uint64()
