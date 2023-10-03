@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum-optimism/optimism/op-node/client"
@@ -32,6 +34,20 @@ func checkIsLeader(
 	isLeader, err := contract.IsCurrentLeader(&bind.CallOpts{}, address, blockNumber)
 	require.Nil(t, err)
 	require.True(t, isLeader)
+}
+
+func checkL2Blocks(t *testing.T, receipts []*types.Receipt, numTxs int, l2Client *ethclient.Client, rollupClient *sources.RollupClient) {
+	for i := 0; i < numTxs; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		receipt := receipts[i]
+
+		blockNumber := receipt.BlockNumber.Uint64()
+		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
+		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+		log.Info("blockId:  " + eth.ToBlockID(block).String())
+		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
+	}
 }
 
 func getBatchInboxContract(t *testing.T, sys *System) *bindings.LeaderElectionBatchInbox {
@@ -229,7 +245,7 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 }
 
 func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
-	InitParallel(t)
+	//InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
 
@@ -308,7 +324,7 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the presence of a wrong batcher replacing a good one
 func TestMixOfGoodAndBadBatchers(t *testing.T) {
-	InitParallel(t)
+	//InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
 
@@ -365,24 +381,12 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 	}
 
 	// All the blocks should be processed correctly
-	for i := 0; i < numTxs; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-		defer cancel()
-
-		receipt := receipts[i]
-
-		blockNumber := receipt.BlockNumber.Uint64()
-
-		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
-		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
-	}
+	checkL2Blocks(t, receipts, numTxs, l2Client, rollupClient)
 }
 
 // We produce several blocks, everything should go through despite the absence of a good batcher
 func TestMissingGoodBatcher(t *testing.T) {
-	InitParallel(t)
+	//InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
 
@@ -434,15 +438,5 @@ func TestMissingGoodBatcher(t *testing.T) {
 	}
 
 	// All the blocks should be processed correctly
-	for i := 0; i < numTxs; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second) // TODO constant across all tests
-		defer cancel()
-		receipt := receipts[i]
-
-		blockNumber := receipt.BlockNumber.Uint64()
-		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
-		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
-	}
+	checkL2Blocks(t, receipts, numTxs, l2Client, rollupClient)
 }
