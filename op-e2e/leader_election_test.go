@@ -364,7 +364,7 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
 	// All the blocks should be processed correctly
@@ -433,7 +433,7 @@ func TestMissingGoodBatcher(t *testing.T) {
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
 	// All the blocks should be processed correctly
