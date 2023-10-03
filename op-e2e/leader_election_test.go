@@ -415,7 +415,7 @@ func TestMissingGoodBatcher(t *testing.T) {
 		require.Nil(t, err)
 	}
 	// Waiting for the batchers to be up
-	time.Sleep(10 * time.Second) // TODO constant accross all tests
+	time.Sleep(10 * time.Second) // TODO constant across all tests
 
 	log.Info("Sending transactions to L2...")
 
@@ -433,7 +433,7 @@ func TestMissingGoodBatcher(t *testing.T) {
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second) // TODO constant accross all tests
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second) // TODO constant across all tests
 	defer cancel()
 
 	// All the blocks should be processed correctly
