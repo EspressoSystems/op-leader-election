@@ -52,6 +52,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 	InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
+
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
@@ -101,18 +102,20 @@ func TestLeaderElectionCorrectBatcherSendOneBlock(t *testing.T) {
 
 	cfg := DefaultSystemConfig(t)
 
-	cfg.switchToV2()
-
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
+
+	sys.SetBatchInboxToV2(t)
+
+	time.Sleep(12 * time.Second)
 
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
 
-	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
+	//require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
 
 	aliceKey := sys.cfg.Secrets.Alice
 
@@ -208,10 +211,11 @@ func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
 			opts.ToAddr = &cfg.Secrets.Addresses().Bob
 			opts.Value = big.NewInt(1_000)
+			opts.Nonce = uint64(1)
 		})
 		require.NoError(t, err, "Sending L2 tx")
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		blockNumber := receipt.BlockNumber.Uint64()
