@@ -807,6 +807,9 @@ jobs:
           working_directory: <<parameters.module>>
       - store_test_results:
           path: /tmp/test-results
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: test-results.txt
 
   go-lint-test-build:
     parameters:
