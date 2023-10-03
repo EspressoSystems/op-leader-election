@@ -14,8 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
-
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -91,6 +89,7 @@ func DefaultSystemConfig(t *testing.T) SystemConfig {
 	require.NoError(t, err)
 	deployConfig := config.DeployConfig.Copy()
 	deployConfig.L1GenesisBlockTimestamp = hexutil.Uint64(time.Now().Unix())
+	deployConfig.BatchInboxContractAddress = config.L1Deployments.RoundRobinLeaderElectionProxy
 	require.NoError(t, deployConfig.Check(), "Deploy config is invalid, do you need to run make devnet-allocs?")
 	l1Deployments := config.L1Deployments.Copy()
 	require.NoError(t, l1Deployments.Check())
@@ -153,6 +152,7 @@ func DefaultSystemConfig(t *testing.T) SystemConfig {
 		ExternalL2Shim:             config.ExternalL2Shim,
 		BatcherTargetL1TxSizeBytes: 100_000,
 	}
+
 }
 
 func writeDefaultJWT(t *testing.T) string {
@@ -207,12 +207,6 @@ type SystemConfig struct {
 
 	// SupportL1TimeTravel determines if the L1 node supports quickly skipping forward in time
 	SupportL1TimeTravel bool
-}
-
-func (sys *SystemConfig) switchToV2() {
-	sys.DisableBatcher = true
-	sys.DeployConfig.InitialBatcherVersion = derive.BatchV2Type
-	sys.DeployConfig.BatchInboxContractAddress = sys.L1Deployments.RoundRobinLeaderElectionProxy
 }
 
 type GethInstance struct {
@@ -344,6 +338,7 @@ func (sys *System) InitLeaderBatchInboxContract(t *testing.T, accounts []*TestAc
 }
 
 func (sys *System) SetBatchInboxToV2(t *testing.T) {
+	log.Info("Call SetBatchInboxToV2")
 	l1Client := sys.Clients["l1"]
 
 	// change gas limit on L1 to triple what it was
@@ -358,6 +353,7 @@ func (sys *System) SetBatchInboxToV2(t *testing.T) {
 
 	_, err = sysCfgContract.SetBatcherHash(sysCfgOwner, v2BatcherHash)
 	require.NoError(t, err)
+	log.Info("SystemConfig contract updated.")
 
 }
 
