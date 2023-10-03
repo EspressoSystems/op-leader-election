@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"fmt"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"math/big"
 	"net"
 	"os"
@@ -207,6 +208,12 @@ type SystemConfig struct {
 
 	// SupportL1TimeTravel determines if the L1 node supports quickly skipping forward in time
 	SupportL1TimeTravel bool
+}
+
+func (sys *SystemConfig) switchToV2() {
+	sys.DisableBatcher = true
+	sys.DeployConfig.InitialBatcherVersion = derive.BatchV2Type
+	sys.DeployConfig.BatchInboxContractAddress = sys.L1Deployments.RoundRobinLeaderElectionProxy
 }
 
 type GethInstance struct {
