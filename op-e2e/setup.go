@@ -55,6 +55,7 @@ import (
 	rollupNode "github.com/ethereum-optimism/optimism/op-node/node"
 	"github.com/ethereum-optimism/optimism/op-node/p2p"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
 	"github.com/ethereum-optimism/optimism/op-node/sources"
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
@@ -207,6 +208,12 @@ type SystemConfig struct {
 
 	// SupportL1TimeTravel determines if the L1 node supports quickly skipping forward in time
 	SupportL1TimeTravel bool
+}
+
+func (sys *SystemConfig) switchToV2() {
+	sys.DisableBatcher = true
+	sys.DeployConfig.InitialBatcherVersion = derive.BatchV2Type
+	sys.DeployConfig.BatchInboxContractAddress = sys.L1Deployments.RoundRobinLeaderElectionProxy
 }
 
 type GethInstance struct {
