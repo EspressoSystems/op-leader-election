@@ -48,6 +48,7 @@ func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
 			opts.ToAddr = &cfg.Secrets.Addresses().Bob
 			opts.Value = big.NewInt(1_000)
+			opts.Nonce = uint64(0)
 		})
 		require.NoError(t, err, "Sending L2 tx")
 
@@ -74,7 +75,7 @@ func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
 			opts.ToAddr = &cfg.Secrets.Addresses().Bob
 			opts.Value = big.NewInt(1_000)
-			opts.Nonce = uint64(1)
+			opts.Nonce = uint64(i + 1)
 		})
 		require.NoError(t, err, "Sending L2 tx")
 
