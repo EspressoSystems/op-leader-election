@@ -9,10 +9,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/ethereum-optimism/optimism/op-node/client"
 	"github.com/ethereum-optimism/optimism/op-node/sources"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/ethereum-optimism/optimism/op-service/eth"
@@ -26,6 +25,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func defaultConfigWithSmallSequencingWindow(t *testing.T) SystemConfig {
+	// From system_fpp_test.go
+	// Use a small sequencer window size to avoid test timeout while waiting for empty blocks
+	// But not too small to ensure that our claim and subsequent state change is published
+	cfg := DefaultSystemConfig(t)
+	cfg.DeployConfig.SequencerWindowSize = 16
+	return cfg
+}
+
 func checkIsLeader(
 	t *testing.T,
 	contract *bindings.LeaderElectionBatchInbox,
@@ -37,9 +45,18 @@ func checkIsLeader(
 }
 
 func checkL2Blocks(t *testing.T, receipts []*types.Receipt, numTxs int, l2Client *ethclient.Client, rollupClient *sources.RollupClient) {
+
+	// See system_fpp_test.go#73
+	// Avoids flaky test by avoiding reorgs at epoch 0
+	t.Log("Wait for safe head to advance once for setup")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Safe head doesn't exist at genesis. Wait for the first one before proceeding
+	require.NoError(t, waitForSafeHead(ctx, 1, rollupClient))
+
 	for i := 0; i < numTxs; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
 		receipt := receipts[i]
 
 		blockNumber := receipt.BlockNumber.Uint64()
@@ -69,7 +86,7 @@ func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
 func TestLeaderElectionSetup(t *testing.T) {
 	InitParallel(t)
 
-	cfg := DefaultSystemConfig(t)
+	cfg := defaultConfigWithSmallSequencingWindow(t)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
@@ -119,7 +136,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	InitParallel(t)
 
-	cfg := DefaultSystemConfig(t)
+	cfg := defaultConfigWithSmallSequencingWindow(t)
 
 	cfg.switchToV2()
 
@@ -189,7 +206,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 func TestLeaderElectionWrongBatcher(t *testing.T) {
 	InitParallel(t)
 
-	cfg := DefaultSystemConfig(t)
+	cfg := defaultConfigWithSmallSequencingWindow(t)
 
 	cfg.switchToV2()
 
@@ -245,9 +262,9 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 }
 
 func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
-	//InitParallel(t)
+	InitParallel(t)
 
-	cfg := DefaultSystemConfig(t)
+	cfg := defaultConfigWithSmallSequencingWindow(t)
 
 	cfg.switchToV2()
 
@@ -324,9 +341,9 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the presence of a wrong batcher replacing a good one
 func TestMixOfGoodAndBadBatchers(t *testing.T) {
-	//InitParallel(t)
+	InitParallel(t)
 
-	cfg := DefaultSystemConfig(t)
+	cfg := defaultConfigWithSmallSequencingWindow(t)
 
 	cfg.switchToV2()
 
@@ -386,9 +403,9 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the absence of a good batcher
 func TestMissingGoodBatcher(t *testing.T) {
-	//InitParallel(t)
+	InitParallel(t)
 
-	cfg := DefaultSystemConfig(t)
+	cfg := defaultConfigWithSmallSequencingWindow(t)
 
 	cfg.switchToV2()
 
@@ -419,7 +436,7 @@ func TestMissingGoodBatcher(t *testing.T) {
 		require.Nil(t, err)
 	}
 	// Waiting for the batchers to be up
-	time.Sleep(10 * time.Second) // TODO constant across all tests
+	time.Sleep(10 * time.Second)
 
 	log.Info("Sending transactions to L2...")
 
