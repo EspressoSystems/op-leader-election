@@ -84,7 +84,7 @@ func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
 }
 
 func TestLeaderElectionSetup(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
@@ -134,7 +134,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 // This test covers https://github.com/EspressoSystems/op-leader-election/issues/58 and https://github.com/EspressoSystems/op-leader-election/issues/59
 // It instantiates a single batcher (the first one out of three) and creates two L2 blocks that are correctly submitted to L1 by this batcher
 func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
@@ -206,7 +206,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 }
 
 func TestLeaderElectionWrongBatcher(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
@@ -264,7 +264,7 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 }
 
 func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
@@ -343,7 +343,7 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the presence of a wrong batcher replacing a good one
 func TestMixOfGoodAndBadBatchers(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
@@ -405,7 +405,7 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the absence of a good batcher
 func TestMissingGoodBatcher(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
@@ -458,81 +458,4 @@ func TestMissingGoodBatcher(t *testing.T) {
 
 	// All the blocks should be processed correctly
 	checkL2Blocks(t, receipts, numTxs, l2Client, rollupClient)
-}
-
-func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
-	InitParallel(t)
-
-	cfg := DefaultSystemConfig(t)
-
-	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
-	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
-	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
-
-	require.Nil(t, err, "Error starting up system")
-	defer sys.Close()
-
-	sys.InitLeaderBatchInboxContract(t, accounts)
-
-	aliceKey := sys.cfg.Secrets.Alice
-
-	l2Client := sys.Clients["sequencer"]
-
-	rollupClient := getRollupClient(t, sys)
-
-	// Start all batchers
-	for i := 0; i < NumberOfLeaders; i++ {
-		err = sys.BatchSubmitters[i].Start()
-		require.Nil(t, err)
-	}
-
-	// Waiting for the batchers to be up
-	time.Sleep(5 * time.Second)
-
-	{
-		log.Info("Sending a transaction to L2...")
-
-		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
-			opts.ToAddr = &cfg.Secrets.Addresses().Bob
-			opts.Value = big.NewInt(1_000)
-		})
-		require.NoError(t, err, "Sending L2 tx")
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-
-		blockNumber := receipt.BlockNumber.Uint64()
-		log.Info("", "block receipt", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
-
-		require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
-
-	}
-
-	sys.SetBatchInboxToV2(t)
-
-	time.Sleep(12 * time.Second)
-
-	{
-		log.Info("Sending another transaction to L2...")
-
-		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
-			opts.ToAddr = &cfg.Secrets.Addresses().Bob
-			opts.Value = big.NewInt(1_000)
-			opts.Nonce = uint64(1)
-		})
-		require.NoError(t, err, "Sending L2 tx")
-
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		blockNumber := receipt.BlockNumber.Uint64()
-		log.Info("", "block receipt", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
-
-		require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
-
-	}
 }

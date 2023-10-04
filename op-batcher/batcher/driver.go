@@ -342,10 +342,15 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherIsLeaderStatus() (bool, error
 				l.Config.BatchInboxVersion = derive.BatchV2Type
 			}
 		}
-	}
-
-	if l.Config.BatchInboxVersion == derive.BatchV1Type {
-		return true, nil
+		if l.Config.BatchInboxVersion == derive.BatchV1Type {
+			if batcherHash == l.txMgr.From().Hash() {
+				return true, nil
+			} else {
+				return false, nil
+			}
+		}
+	} else {
+		return false, err
 	}
 
 	l.log.Info("BatchV2Type activated")
@@ -408,7 +413,7 @@ func (l *BatchSubmitter) loop() {
 				l.state.Clear()
 				continue
 			}
-			log.Warn("Batcher is the leader", "address", l.TxManager.From())
+			log.Info("Batcher is the leader", "address", l.TxManager.From())
 			if err := l.loadBlocksIntoState(l.shutdownCtx); errors.Is(err, ErrReorg) {
 				err := l.state.Close()
 				if err != nil {
