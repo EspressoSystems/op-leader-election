@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum-optimism/optimism/op-node/client"
@@ -32,6 +34,20 @@ func checkIsLeader(
 	isLeader, err := contract.IsCurrentLeader(&bind.CallOpts{}, address, blockNumber)
 	require.Nil(t, err)
 	require.True(t, isLeader)
+}
+
+func checkL2Blocks(t *testing.T, receipts []*types.Receipt, numTxs int, l2Client *ethclient.Client, rollupClient *sources.RollupClient) {
+	for i := 0; i < numTxs; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		receipt := receipts[i]
+
+		blockNumber := receipt.BlockNumber.Uint64()
+		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
+		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+		log.Info("blockId:  " + eth.ToBlockID(block).String())
+		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
+	}
 }
 
 func getBatchInboxContract(t *testing.T, sys *System) *bindings.LeaderElectionBatchInbox {
@@ -107,6 +123,8 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	cfg := DefaultSystemConfig(t)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
+
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
@@ -168,7 +186,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	}
 	// Ensure that the batcher was able to push two consecutive non-empty blocks
 	require.True(t, blockNumber-previousBlockNumber > 0)
-	require.True(t, blockNumber-previousBlockNumber < 10) // 10 is the number of L1 blocks assigned to each leader
+	require.True(t, (blockNumber-previousBlockNumber) < uint64(NumberOfSlotsPerLeader))
 }
 
 func TestLeaderElectionWrongBatcher(t *testing.T) {
@@ -179,6 +197,7 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 	cfg.switchToV2()
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
 
 	// We generate one extra batcher that will be the wrong one
@@ -229,13 +248,14 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 }
 
 func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
-	InitParallel(t)
+	//InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
 
 	cfg.switchToV2()
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
@@ -258,13 +278,13 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 		require.Nil(t, err)
 	}
 	// Waiting for the batchers to be up
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	log.Info("Sending transactions to L2...")
 
 	var receipts []*types.Receipt
 
-	numTxs := 7
+	numTxs := 7 * NumberOfSlotsPerLeader
 	for i := 0; i < numTxs; i++ {
 		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
 			opts.ToAddr = &cfg.Secrets.Addresses().Bob
@@ -276,12 +296,12 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 		require.NoError(t, err, "Sending L2 tx")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
 	minBlockNumber := uint64(1000) // Very high value to start with
 	maxBlockNumber := uint64(0)
 	for i := 0; i < numTxs; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
 		receipt := receipts[i]
 
 		blockNumber := receipt.BlockNumber.Uint64()
@@ -301,8 +321,127 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 	}
 	// The gap between the min and max block number should cover 4 epochs at least
 	log.Info("", "maxBlockNumber-minBlockNumber", maxBlockNumber-minBlockNumber)
-	require.True(t, maxBlockNumber-minBlockNumber >= 4)
+	require.True(t, maxBlockNumber-minBlockNumber >= 4*uint64(NumberOfSlotsPerLeader))
 
+}
+
+// We produce several blocks, everything should go through despite the presence of a wrong batcher replacing a good one
+func TestMixOfGoodAndBadBatchers(t *testing.T) {
+	//InitParallel(t)
+
+	cfg := DefaultSystemConfig(t)
+
+	cfg.switchToV2()
+
+	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
+
+	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
+	// We generate one extra batcher that will be the wrong one
+	numBatchers := NumberOfLeaders + 1
+
+	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, numBatchers)
+
+	require.Nil(t, err, "Error starting up system")
+	defer sys.Close()
+
+	sys.InitLeaderBatchInboxContract(t, accounts)
+
+	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
+
+	aliceKey := sys.cfg.Secrets.Alice
+
+	l2Client := sys.Clients["sequencer"]
+
+	rollupClient := getRollupClient(t, sys)
+
+	// Start all the batchers but replace the second one (which is good) by the bad one
+	for i := 0; i < NumberOfLeaders; i++ {
+		if i == 1 { // Start the wrong batcher
+			err = sys.BatchSubmitters[numBatchers-1].Start()
+		} else {
+			err = sys.BatchSubmitters[i].Start()
+		}
+		require.Nil(t, err)
+	}
+	// Waiting for the batchers to be up
+	time.Sleep(10 * time.Second)
+
+	log.Info("Sending transactions to L2...")
+
+	var receipts []*types.Receipt
+
+	numTxs := 7 * NumberOfSlotsPerLeader
+	for i := 0; i < numTxs; i++ {
+		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
+			opts.ToAddr = &cfg.Secrets.Addresses().Bob
+			opts.Nonce = uint64(i)
+			opts.Value = big.NewInt(1_000)
+		})
+
+		receipts = append(receipts, receipt)
+		require.NoError(t, err, "Sending L2 tx")
+	}
+
+	// All the blocks should be processed correctly
+	checkL2Blocks(t, receipts, numTxs, l2Client, rollupClient)
+}
+
+// We produce several blocks, everything should go through despite the absence of a good batcher
+func TestMissingGoodBatcher(t *testing.T) {
+	//InitParallel(t)
+
+	cfg := DefaultSystemConfig(t)
+
+	cfg.switchToV2()
+
+	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
+	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
+	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
+
+	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
+
+	require.Nil(t, err, "Error starting up system")
+	defer sys.Close()
+
+	sys.InitLeaderBatchInboxContract(t, accounts)
+
+	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
+
+	aliceKey := sys.cfg.Secrets.Alice
+
+	l2Client := sys.Clients["sequencer"]
+
+	rollupClient := getRollupClient(t, sys)
+
+	// Start all the batchers but one
+	for i := 0; i < NumberOfLeaders; i++ {
+		if i != 1 { // Skip one good batcher
+			err = sys.BatchSubmitters[i].Start()
+		}
+		require.Nil(t, err)
+	}
+	// Waiting for the batchers to be up
+	time.Sleep(10 * time.Second) // TODO constant across all tests
+
+	log.Info("Sending transactions to L2...")
+
+	var receipts []*types.Receipt
+
+	numTxs := 7 * NumberOfSlotsPerLeader
+	for i := 0; i < numTxs; i++ {
+		receipt := SendL2Tx(t, cfg, l2Client, aliceKey, func(opts *TxOpts) {
+			opts.ToAddr = &cfg.Secrets.Addresses().Bob
+			opts.Nonce = uint64(i)
+			opts.Value = big.NewInt(1_000)
+		})
+
+		receipts = append(receipts, receipt)
+		require.NoError(t, err, "Sending L2 tx")
+	}
+
+	// All the blocks should be processed correctly
+	checkL2Blocks(t, receipts, numTxs, l2Client, rollupClient)
 }
 
 func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
