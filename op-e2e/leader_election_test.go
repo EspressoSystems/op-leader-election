@@ -146,8 +146,6 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 
 	sys.SetBatchInboxToV2(t)
 
-	time.Sleep(12 * time.Second)
-
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
@@ -218,6 +216,8 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 	numBatchers := NumberOfLeaders + 1
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, numBatchers)
 
+	sys.SetBatchInboxToV2(t)
+
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
@@ -233,7 +233,6 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 
 	// Start the wrong batcher only to prove it cannot produce blocks
 	wrongBatcher := sys.BatchSubmitters[numBatchers-1]
-	require.Equal(t, wrongBatcher.Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
 	err = wrongBatcher.Start()
 	require.Nil(t, err)
 
@@ -271,10 +270,9 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
+	sys.SetBatchInboxToV2(t)
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
-
-	sys.SetBatchInboxToV2(t)
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
 
@@ -352,10 +350,9 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, numBatchers)
 
+	sys.SetBatchInboxToV2(t)
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
-
-	sys.SetBatchInboxToV2(t)
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
 
@@ -411,10 +408,9 @@ func TestMissingGoodBatcher(t *testing.T) {
 
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
+	sys.SetBatchInboxToV2(t)
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
-
-	sys.SetBatchInboxToV2(t)
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
 
