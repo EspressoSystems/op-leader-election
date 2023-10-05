@@ -84,7 +84,7 @@ func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
 }
 
 func TestLeaderElectionSetup(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
@@ -134,11 +134,9 @@ func TestLeaderElectionSetup(t *testing.T) {
 // This test covers https://github.com/EspressoSystems/op-leader-election/issues/58 and https://github.com/EspressoSystems/op-leader-election/issues/59
 // It instantiates a single batcher (the first one out of three) and creates two L2 blocks that are correctly submitted to L1 by this batcher
 func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
-
-	cfg.switchToV2()
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -146,12 +144,14 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
+	sys.SetBatchInboxToV2(t)
+
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
 
-	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
+	//require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
 
 	aliceKey := sys.cfg.Secrets.Alice
 
@@ -204,11 +204,9 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 }
 
 func TestLeaderElectionWrongBatcher(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
-
-	cfg.switchToV2()
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 
@@ -217,6 +215,8 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 	// We generate one extra batcher that will be the wrong one
 	numBatchers := NumberOfLeaders + 1
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, numBatchers)
+
+	sys.SetBatchInboxToV2(t)
 
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
@@ -233,7 +233,6 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 
 	// Start the wrong batcher only to prove it cannot produce blocks
 	wrongBatcher := sys.BatchSubmitters[numBatchers-1]
-	require.Equal(t, wrongBatcher.Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
 	err = wrongBatcher.Start()
 	require.Nil(t, err)
 
@@ -266,19 +265,16 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
-	cfg.switchToV2()
-
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
+	sys.SetBatchInboxToV2(t)
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
-
-	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
 
 	aliceKey := sys.cfg.Secrets.Alice
 
@@ -341,11 +337,9 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the presence of a wrong batcher replacing a good one
 func TestMixOfGoodAndBadBatchers(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
-
-	cfg.switchToV2()
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -356,12 +350,11 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, numBatchers)
 
+	sys.SetBatchInboxToV2(t)
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
-
-	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
 
 	aliceKey := sys.cfg.Secrets.Alice
 
@@ -403,7 +396,7 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the absence of a good batcher
 func TestMissingGoodBatcher(t *testing.T) {
-	InitParallel(t)
+	// InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
@@ -415,12 +408,11 @@ func TestMissingGoodBatcher(t *testing.T) {
 
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
+	sys.SetBatchInboxToV2(t)
 	require.Nil(t, err, "Error starting up system")
 	defer sys.Close()
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
-
-	require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
 
 	aliceKey := sys.cfg.Secrets.Alice
 

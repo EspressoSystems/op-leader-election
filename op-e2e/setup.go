@@ -14,8 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
-
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -57,6 +55,7 @@ import (
 	rollupNode "github.com/ethereum-optimism/optimism/op-node/node"
 	"github.com/ethereum-optimism/optimism/op-node/p2p"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
 	"github.com/ethereum-optimism/optimism/op-node/sources"
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
@@ -91,6 +90,7 @@ func DefaultSystemConfig(t *testing.T) SystemConfig {
 	require.NoError(t, err)
 	deployConfig := config.DeployConfig.Copy()
 	deployConfig.L1GenesisBlockTimestamp = hexutil.Uint64(time.Now().Unix())
+	deployConfig.BatchInboxContractAddress = config.L1Deployments.RoundRobinLeaderElectionProxy
 	require.NoError(t, deployConfig.Check(), "Deploy config is invalid, do you need to run make devnet-allocs?")
 	l1Deployments := config.L1Deployments.Copy()
 	require.NoError(t, l1Deployments.Check())
@@ -153,6 +153,7 @@ func DefaultSystemConfig(t *testing.T) SystemConfig {
 		ExternalL2Shim:             config.ExternalL2Shim,
 		BatcherTargetL1TxSizeBytes: 100_000,
 	}
+
 }
 
 func writeDefaultJWT(t *testing.T) string {
@@ -341,6 +342,26 @@ func (sys *System) InitLeaderBatchInboxContract(t *testing.T, accounts []*TestAc
 		batchSubmitterAddress := sys.BatchSubmitters[i].TxManager.From()
 		addNewLeader(t, sys, batchSubmitterAddress)
 	}
+}
+
+func (sys *System) SetBatchInboxToV2(t *testing.T) {
+	log.Info("Call SetBatchInboxToV2")
+	l1Client := sys.Clients["l1"]
+
+	// change gas limit on L1 to triple what it was
+	sysCfgContract, err := bindings.NewSystemConfig(sys.RollupConfig.L1SystemConfigAddress, l1Client)
+	require.NoError(t, err)
+
+	sysCfgOwner, err := bind.NewKeyedTransactorWithChainID(sys.cfg.Secrets.SysCfgOwner, sys.RollupConfig.L1ChainID)
+	require.NoError(t, err)
+
+	v2BatcherHash := [32]byte{}
+	v2BatcherHash[0] = 1 // BatchV2Type
+
+	_, err = sysCfgContract.SetBatcherHash(sysCfgOwner, v2BatcherHash)
+	require.NoError(t, err)
+	log.Info("SystemConfig contract updated.")
+
 }
 
 type systemConfigHook func(sCfg *SystemConfig, s *System)
