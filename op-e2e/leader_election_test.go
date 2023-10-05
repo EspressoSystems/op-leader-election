@@ -14,8 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/ethereum-optimism/optimism/op-service/eth"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/ethereum-optimism/optimism/op-bindings/bindings"
@@ -63,10 +61,6 @@ func checkL2Blocks(t *testing.T, receipts []*types.Receipt, numTxs int, l2Client
 
 		blockNumber := receipt.BlockNumber.Uint64()
 		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		// TODO for some reason this generates some random error:
-		// TODO panic: runtime error: invalid memory address or nil pointer dereference [recovered]
-		//block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		//log.Info("blockId:  " + eth.ToBlockID(block).String())
 		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 	}
 }
@@ -196,10 +190,6 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 		previousBlockNumber = blockNumber
 		log.Info("", "previous block number", strconv.Itoa(int(previousBlockNumber)))
 		blockNumber = receipt.BlockNumber.Uint64()
-
-		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
 		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 	}
 	// Ensure that the batcher was able to push two consecutive non-empty blocks
@@ -254,10 +244,6 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 	defer cancel()
 
 	blockNumber := receipt.BlockNumber.Uint64()
-
-	log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-	block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-	log.Info("blockId:  " + eth.ToBlockID(block).String())
 
 	// The block is not produced
 	require.Error(t, waitForSafeHead(ctx, blockNumber, rollupClient))
@@ -328,9 +314,6 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 			minBlockNumber = blockNumber
 		}
 
-		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
 		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 	}
 	// The gap between the min and max block number should cover 4 epochs at least
