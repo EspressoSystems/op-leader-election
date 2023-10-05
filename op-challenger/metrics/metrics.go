@@ -25,8 +25,6 @@ type Metricer interface {
 	RecordGameMove()
 	RecordCannonExecutionTime(t float64)
 
-	RecordGameClaimCount(addr string, count int)
-
 	RecordGamesStatus(inProgress, defenderWon, challengerWon int)
 
 	RecordGameUpdateScheduled()

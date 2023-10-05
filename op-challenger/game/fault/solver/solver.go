@@ -207,26 +207,3 @@ func (s *claimSolver) agreeWithClaimPath(ctx context.Context, game types.Game, c
 	}
 	return s.agreeWithClaimPath(ctx, game, grandParent)
 }
-
-// agreeWithClaimPath returns true if the every other claim in the path to root is correct according to the internal [TraceProvider].
-func (s *claimSolver) agreeWithClaimPath(ctx context.Context, game types.Game, claim types.Claim) (bool, error) {
-	agree, err := s.agreeWithClaim(ctx, claim.ClaimData)
-	if err != nil {
-		return false, err
-	}
-	if !agree {
-		return false, nil
-	}
-	if claim.IsRoot() || claim.Parent.IsRootPosition() {
-		return true, nil
-	}
-	parent, err := game.GetParent(claim)
-	if err != nil {
-		return false, err
-	}
-	grandParent, err := game.GetParent(parent)
-	if err != nil {
-		return false, err
-	}
-	return s.agreeWithClaimPath(ctx, game, grandParent)
-}

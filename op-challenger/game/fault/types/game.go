@@ -61,7 +61,6 @@ func NewGameState(agreeWithProposedOutput bool, claims []Claim, depth uint64) *g
 	for _, claim := range claims {
 		claimIDs[computeClaimID(claim)] = true
 	}
-	parents[root.ContractIndex] = claims[rootClaimEntry]
 	return &gameState{
 		agreeWithProposedOutput: agreeWithProposedOutput,
 		claims:                  claims,
