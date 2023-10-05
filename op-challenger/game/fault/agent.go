@@ -30,7 +30,6 @@ type ClaimLoader interface {
 
 type Agent struct {
 	metrics                 metrics.Metricer
-	fdgAddr                 common.Address
 	solver                  *solver.GameSolver
 	loader                  ClaimLoader
 	responder               Responder
@@ -40,10 +39,9 @@ type Agent struct {
 	log                     log.Logger
 }
 
-func NewAgent(m metrics.Metricer, addr common.Address, loader ClaimLoader, maxDepth int, trace types.TraceProvider, responder Responder, updater types.OracleUpdater, agreeWithProposedOutput bool, log log.Logger) *Agent {
+func NewAgent(m metrics.Metricer, loader ClaimLoader, maxDepth int, trace types.TraceProvider, responder Responder, updater types.OracleUpdater, agreeWithProposedOutput bool, log log.Logger) *Agent {
 	return &Agent{
 		metrics:                 m,
-		fdgAddr:                 addr,
 		solver:                  solver.NewGameSolver(maxDepth, trace),
 		loader:                  loader,
 		responder:               responder,

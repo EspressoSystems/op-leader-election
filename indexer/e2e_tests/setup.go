@@ -206,8 +206,6 @@ func setupTestDatabase(t *testing.T) string {
 	db, err := database.NewDB(silentLog, dbConfig)
 	require.NoError(t, err)
 	defer db.Close()
-	err = db.ExecuteSQLMigration("../migrations")
-	require.NoError(t, err)
 
 	err = db.ExecuteSQLMigration("../migrations")
 	require.NoError(t, err)

@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/ethereum-optimism/optimism/op-challenger/game/fault/test"
@@ -112,12 +111,11 @@ func TestLoadClaimsWhenGameNotResolvable(t *testing.T) {
 func setupTestAgent(t *testing.T, agreeWithProposedOutput bool) (*Agent, *stubClaimLoader, *stubResponder) {
 	logger := testlog.Logger(t, log.LvlInfo)
 	claimLoader := &stubClaimLoader{}
-	addr := common.HexToAddress("0x1234")
 	depth := 4
 	trace := alphabet.NewTraceProvider("abcd", uint64(depth))
 	responder := &stubResponder{}
 	updater := &stubUpdater{}
-	agent := NewAgent(metrics.NoopMetrics, addr, claimLoader, depth, trace, responder, updater, agreeWithProposedOutput, logger)
+	agent := NewAgent(metrics.NoopMetrics, claimLoader, depth, trace, responder, updater, agreeWithProposedOutput, logger)
 	return agent, claimLoader, responder
 }
 
