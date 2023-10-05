@@ -190,10 +190,6 @@ func (m *Metrics) DecIdleExecutors() {
 	m.executors.WithLabelValues("idle").Dec()
 }
 
-func (m *Metrics) RecordGameClaimCount(addr string, count int) {
-	m.gameClaimCount.With(prometheus.Labels{"game_address": addr}).Set(float64(count))
-}
-
 func (m *Metrics) RecordGamesStatus(inProgress, defenderWon, challengerWon int) {
 	m.trackedGames.WithLabelValues("in_progress").Set(float64(inProgress))
 	m.trackedGames.WithLabelValues("defender_won").Set(float64(defenderWon))

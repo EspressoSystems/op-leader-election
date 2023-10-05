@@ -58,5 +58,7 @@
   "leaderElectionNumberOfLeaders": 3,
   "leaderElectionNumberOfSlotsPerLeader":4,
   "batchInboxContractAddress": "0xff00000000000000000000000000000000042069",
-  "initialBatcherVersion": 0
+  "initialBatcherVersion": 0,
+  "requiredProtocolVersion": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "recommendedProtocolVersion": "0x0000000000000000000000000000000000000000000000000000000000000000"
 }

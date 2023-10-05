@@ -154,10 +154,10 @@ func (a *Agent) tryResolveClaims(ctx context.Context) error {
 			resolvableClaims = append(resolvableClaims, int64(claim.ContractIndex))
 		}
 	}
-	a.log.Info("Resolving claims", "numClaims", len(resolvableClaims))
 	if len(resolvableClaims) == 0 {
 		return errNoResolvableClaims
 	}
+	a.log.Info("Resolving claims", "numClaims", len(resolvableClaims))
 
 	var wg sync.WaitGroup
 	wg.Add(len(resolvableClaims))
@@ -198,10 +198,6 @@ func (a *Agent) newGameFromContracts(ctx context.Context) (types.Game, error) {
 	if len(claims) == 0 {
 		return nil, errors.New("no claims")
 	}
-	a.metrics.RecordGameClaimCount(a.fdgAddr.String(), len(claims))
-	game := types.NewGameState(a.agreeWithProposedOutput, claims[0], uint64(a.maxDepth))
-	if err := game.PutAll(claims[1:]); err != nil {
-		return nil, fmt.Errorf("failed to load claims into the local state: %w", err)
-	}
+	game := types.NewGameState(a.agreeWithProposedOutput, claims, uint64(a.maxDepth))
 	return game, nil
 }

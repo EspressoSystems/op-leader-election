@@ -39,10 +39,10 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
 	"github.com/ethereum-optimism/optimism/op-node/sources"
-	"github.com/ethereum-optimism/optimism/op-node/testlog"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	oppprof "github.com/ethereum-optimism/optimism/op-service/pprof"
 	"github.com/ethereum-optimism/optimism/op-service/retry"
+	"github.com/ethereum-optimism/optimism/op-service/testlog"
 )
 
 func TestMain(m *testing.M) {
@@ -1530,7 +1530,7 @@ func TestRequiredProtocolVersionChangeAndHalt(t *testing.T) {
 
 	// wait for the required protocol version to take effect by halting the verifier that opted in, and halting the op-geth node that opted in.
 	_, err = retry.Do(context.Background(), 10, retry.Fixed(time.Second*10), func() (struct{}, error) {
-		if !sys.RollupNodes["verifier"].Closed() {
+		if !sys.RollupNodes["verifier"].Stopped() {
 			return struct{}{}, errors.New("verifier rollup node is not closed yet")
 		}
 		return struct{}{}, nil
