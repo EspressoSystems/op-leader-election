@@ -16,7 +16,7 @@ import (
 func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := DefaultSystemConfig(t)
+	cfg := defaultConfigLeaderElection(t)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)

@@ -55,7 +55,6 @@ import (
 	rollupNode "github.com/ethereum-optimism/optimism/op-node/node"
 	"github.com/ethereum-optimism/optimism/op-node/p2p"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
-	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
 	"github.com/ethereum-optimism/optimism/op-node/sources"
 	"github.com/ethereum-optimism/optimism/op-node/testlog"
@@ -210,12 +209,6 @@ type SystemConfig struct {
 	SupportL1TimeTravel bool
 }
 
-func (sys *SystemConfig) switchToV2() {
-	sys.DisableBatcher = true
-	sys.DeployConfig.InitialBatcherVersion = derive.BatchV2Type
-	sys.DeployConfig.BatchInboxContractAddress = sys.L1Deployments.RoundRobinLeaderElectionProxy
-}
-
 type GethInstance struct {
 	Backend *geth_eth.Ethereum
 	Node    *node.Node
@@ -361,6 +354,7 @@ func (sys *System) SetBatchInboxToV2(t *testing.T) {
 	_, err = sysCfgContract.SetBatcherHash(sysCfgOwner, v2BatcherHash)
 	require.NoError(t, err)
 	log.Info("SystemConfig contract updated.")
+	time.Sleep(3 * time.Second)
 
 }
 

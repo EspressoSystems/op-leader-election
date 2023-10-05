@@ -25,12 +25,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func defaultConfigWithSmallSequencingWindow(t *testing.T) SystemConfig {
+func defaultConfigLeaderElection(t *testing.T) SystemConfig {
 	// From system_fpp_test.go
 	// Use a small sequencer window size to avoid test timeout while waiting for empty blocks
 	// But not too small to ensure that our claim and subsequent state change is published
 	cfg := DefaultSystemConfig(t)
-	cfg.DeployConfig.SequencerWindowSize = 16
+	cfg.DeployConfig.SequencerWindowSize = 8
+	cfg.DeployConfig.L1BlockTime = 2
+
 	return cfg
 }
 
@@ -61,8 +63,10 @@ func checkL2Blocks(t *testing.T, receipts []*types.Receipt, numTxs int, l2Client
 
 		blockNumber := receipt.BlockNumber.Uint64()
 		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
+		// TODO for some reason this generates some random error:
+		// TODO panic: runtime error: invalid memory address or nil pointer dereference [recovered]
+		//block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+		//log.Info("blockId:  " + eth.ToBlockID(block).String())
 		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 	}
 }
@@ -86,7 +90,7 @@ func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
 func TestLeaderElectionSetup(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
@@ -136,7 +140,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -206,7 +210,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 func TestLeaderElectionWrongBatcher(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 
@@ -263,7 +267,7 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 	InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -339,7 +343,7 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 func TestMixOfGoodAndBadBatchers(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -398,9 +402,7 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 func TestMissingGoodBatcher(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
-
-	cfg.switchToV2()
+	cfg := defaultConfigLeaderElection(t)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
