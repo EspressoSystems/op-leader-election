@@ -243,7 +243,7 @@ func (n *OpNode) initRuntimeConfig(ctx context.Context, cfg *Config) error {
 	reloader := func(ctx context.Context, reloadInterval time.Duration) {
 		if reloadInterval <= 0 {
 			n.log.Debug("not running runtime-config reloading background loop")
-			return false
+			return
 		}
 		ticker := time.NewTicker(reloadInterval)
 		defer ticker.Stop()
@@ -267,26 +267,9 @@ func (n *OpNode) initRuntimeConfig(ctx context.Context, cfg *Config) error {
 					}
 				} else {
 					n.log.Debug("reloaded runtime config", "l1_head", l1Head)
-					if err == errNodeHalt {
-						return true
-					}
-				default:
-					n.log.Warn("failed to reload runtime config", "err", err)
 				}
 			case <-ctx.Done():
-				return false
-			}
-		}
-	}
-
-	n.runtimeConfigReloaderDone = make(chan struct{})
-	// Manages the lifetime of reloader. In order to safely Close the OpNode
-	go func(ctx context.Context, reloadInterval time.Duration) {
-		halt := reloader(ctx, reloadInterval)
-		close(n.runtimeConfigReloaderDone)
-		if halt {
-			if err := n.Close(); err != nil {
-				n.log.Error("Failed to halt rollup", "err", err)
+				return
 			}
 		}
 	}
