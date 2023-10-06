@@ -68,6 +68,9 @@ func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 
 	sys.SetBatchInboxToV2(t)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	for i := 0; i < 10; i++ {
 		time.Sleep(time.Second)
 		log.Info("Sending another transaction to L2...", "counter", i)
@@ -78,14 +81,6 @@ func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 			opts.Nonce = uint64(i + 1)
 		})
 		require.NoError(t, err, "Sending L2 tx")
-
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		blockNumber := receipt.BlockNumber.Uint64()
-		log.Info("", "block receipt", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
 
 		require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
 
