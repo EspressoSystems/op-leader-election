@@ -338,6 +338,7 @@ func (sys *System) InitLeaderBatchInboxContract(t *testing.T, accounts []*TestAc
 }
 
 func (sys *System) SetBatchInboxToV2(t *testing.T) {
+
 	log.Info("Call SetBatchInboxToV2")
 	l1Client := sys.Clients["l1"]
 

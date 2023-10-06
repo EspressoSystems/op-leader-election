@@ -31,6 +31,9 @@ func defaultConfigLeaderElection(t *testing.T) SystemConfig {
 	cfg.DeployConfig.SequencerWindowSize = 8
 	cfg.DeployConfig.L1BlockTime = 2
 
+	// Ensure the single leader batcher is deactivated
+	cfg.DisableBatcher = true
+
 	return cfg
 }
 
