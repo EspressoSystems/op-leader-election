@@ -334,7 +334,7 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherIsLeaderStatus() (bool, error
 	sysConf, err := bindings.NewSystemConfigCaller(l.Rollup.L1SystemConfigAddress, l.L1Client)
 	if err == nil {
 		batcherHash, err := sysConf.BatcherHash(&bind.CallOpts{BlockNumber: big.NewInt(int64(l1tip.Number)), Context: l.shutdownCtx})
-		log.Info("batcherHash", "value", batcherHash)
+		//log.Info("batcherHash", "value", batcherHash)
 		if err == nil {
 			if batcherHash[0] == derive.BatchV1Type {
 				l.Config.BatchInboxVersion = derive.BatchV1Type
@@ -353,7 +353,7 @@ func (l *BatchSubmitter) checkLeaderElectionBatcherIsLeaderStatus() (bool, error
 		return false, err
 	}
 
-	l.log.Info("BatchV2Type activated")
+	//l.log.Info("BatchV2Type activated")
 
 	lebi, err := bindings.NewLeaderElectionBatchInboxCaller(l.Rollup.BatchInboxContractAddr, l.L1Client)
 	if err != nil {
@@ -409,11 +409,11 @@ func (l *BatchSubmitter) loop() {
 				l.log.Error("error checking status with leader election batch inbox")
 			}
 			if !isLeader {
-				log.Warn("Batcher is not the leader")
+				//log.Warn("Batcher is not the leader")
 				l.state.Clear()
 				continue
 			}
-			log.Info("Batcher is the leader", "address", l.TxManager.From())
+			//log.Info("Batcher is the leader", "address", l.TxManager.From())
 			if err := l.loadBlocksIntoState(l.shutdownCtx); errors.Is(err, ErrReorg) {
 				err := l.state.Close()
 				if err != nil {

@@ -358,7 +358,6 @@ func (sys *System) SetBatchInboxToV2(t *testing.T) {
 	_, err = sysCfgContract.SetBatcherHash(sysCfgOwner, v2BatcherHash)
 	require.NoError(t, err)
 	log.Info("SystemConfig contract updated.")
-	time.Sleep(3 * time.Second)
 
 }
 
