@@ -25,8 +25,6 @@ type Metricer interface {
 	RecordGameMove()
 	RecordCannonExecutionTime(t float64)
 
-	RecordGameClaimCount(addr string, count int)
-
 	RecordGamesStatus(inProgress, defenderWon, challengerWon int)
 
 	RecordGameUpdateScheduled()
@@ -188,10 +186,6 @@ func (m *Metrics) IncIdleExecutors() {
 
 func (m *Metrics) DecIdleExecutors() {
 	m.executors.WithLabelValues("idle").Dec()
-}
-
-func (m *Metrics) RecordGameClaimCount(addr string, count int) {
-	m.gameClaimCount.With(prometheus.Labels{"game_address": addr}).Set(float64(count))
 }
 
 func (m *Metrics) RecordGamesStatus(inProgress, defenderWon, challengerWon int) {
