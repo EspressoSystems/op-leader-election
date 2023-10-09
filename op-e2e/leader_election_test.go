@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/testlog"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -25,12 +24,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func defaultConfigWithSmallSequencingWindow(t *testing.T) SystemConfig {
+func defaultConfigLeaderElection(t *testing.T, disableBatcher bool) SystemConfig {
 	// From system_fpp_test.go
 	// Use a small sequencer window size to avoid test timeout while waiting for empty blocks
 	// But not too small to ensure that our claim and subsequent state change is published
 	cfg := DefaultSystemConfig(t)
 	cfg.DeployConfig.SequencerWindowSize = 16
+
+	// Ensure the single leader batcher is deactivated
+	cfg.DisableBatcher = disableBatcher
+
 	return cfg
 }
 
@@ -61,8 +64,6 @@ func checkL2Blocks(t *testing.T, receipts []*types.Receipt, numTxs int, l2Client
 
 		blockNumber := receipt.BlockNumber.Uint64()
 		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
 		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 	}
 }
@@ -86,7 +87,7 @@ func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
 func TestLeaderElectionSetup(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t, true)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	sys, accounts, err := startConfigWithTestAccounts(t, &cfg, NumberOfLeaders)
 
@@ -136,7 +137,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t, true)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -192,10 +193,6 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 		previousBlockNumber = blockNumber
 		log.Info("", "previous block number", strconv.Itoa(int(previousBlockNumber)))
 		blockNumber = receipt.BlockNumber.Uint64()
-
-		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
 		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 	}
 	// Ensure that the batcher was able to push two consecutive non-empty blocks
@@ -206,7 +203,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 func TestLeaderElectionWrongBatcher(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t, true)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 
@@ -251,10 +248,6 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 
 	blockNumber := receipt.BlockNumber.Uint64()
 
-	log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-	block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-	log.Info("blockId:  " + eth.ToBlockID(block).String())
-
 	// The block is not produced
 	require.Error(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 
@@ -263,7 +256,7 @@ func TestLeaderElectionWrongBatcher(t *testing.T) {
 func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 	InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t, true)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -324,9 +317,6 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 			minBlockNumber = blockNumber
 		}
 
-		log.Info("", "block number", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
 		require.NoError(t, waitForSafeHead(ctx, blockNumber, rollupClient))
 	}
 	// The gap between the min and max block number should cover 4 epochs at least
@@ -339,7 +329,7 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 func TestMixOfGoodAndBadBatchers(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
+	cfg := defaultConfigLeaderElection(t, true)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)
@@ -398,9 +388,7 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 func TestMissingGoodBatcher(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := defaultConfigWithSmallSequencingWindow(t)
-
-	cfg.switchToV2()
+	cfg := defaultConfigLeaderElection(t, true)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	NumberOfSlotsPerLeader := int(cfg.DeployConfig.LeaderElectionNumberOfSlotsPerLeader)

@@ -3,11 +3,8 @@ package op_e2e
 import (
 	"context"
 	"math/big"
-	"strconv"
 	"testing"
 	"time"
-
-	"github.com/ethereum-optimism/optimism/op-service/eth"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/stretchr/testify/require"
@@ -16,7 +13,7 @@ import (
 func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 	// InitParallel(t)
 
-	cfg := DefaultSystemConfig(t)
+	cfg := defaultConfigLeaderElection(t, false)
 
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
 	log.Info("Deploy configuration:", "Number of leaders", NumberOfLeaders)
@@ -40,7 +37,7 @@ func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 	}
 
 	// Waiting for the batchers to be up
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	{
 		log.Info("Sending a transaction to L2...")
@@ -54,11 +51,6 @@ func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-
-		blockNumber := receipt.BlockNumber.Uint64()
-		log.Info("", "block receipt", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
 
 		require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
 
@@ -81,11 +73,6 @@ func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
-
-		blockNumber := receipt.BlockNumber.Uint64()
-		log.Info("", "block receipt", strconv.Itoa(int(blockNumber)))
-		block, _ := l2Client.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
-		log.Info("blockId:  " + eth.ToBlockID(block).String())
 
 		require.NoError(t, waitForSafeHead(ctx, receipt.BlockNumber.Uint64(), rollupClient))
 
