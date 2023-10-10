@@ -39,7 +39,7 @@ type LeaderElectionBatchInboxMeta struct {
 
 // LeaderElectionBatchInboxMetaData contains all meta data concerning the LeaderElectionBatchInbox contract.
 var LeaderElectionBatchInboxMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"addParticipant\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"creation_block_number\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes16\",\"name\":\"channelId\",\"type\":\"bytes16\"},{\"internalType\":\"uint16\",\"name\":\"frameNumber\",\"type\":\"uint16\"},{\"internalType\":\"uint32\",\"name\":\"frameDataLength\",\"type\":\"uint32\"},{\"internalType\":\"bool\",\"name\":\"isLast\",\"type\":\"bool\"},{\"internalType\":\"uint16\",\"name\":\"numL2Blocks\",\"type\":\"uint16\"}],\"internalType\":\"structLeaderElectionBatchInbox.Meta[]\",\"name\":\"_metas\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes\",\"name\":\"_frames\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addr\",\"type\":\"address\"}],\"name\":\"addParticipant\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"creationBlockNumber\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"isCurrentLeader\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_leaderId\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_blockNumber\",\"type\":\"uint256\"}],\"name\":\"nextBlocksAsLeader\",\"outputs\":[{\"internalType\":\"enumLeaderElectionBatchInbox.LeaderStatusFlags\",\"name\":\"\",\"type\":\"uint8\"},{\"internalType\":\"bool[]\",\"name\":\"\",\"type\":\"bool[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"bytes16\",\"name\":\"channelId\",\"type\":\"bytes16\"},{\"internalType\":\"uint16\",\"name\":\"frameNumber\",\"type\":\"uint16\"},{\"internalType\":\"uint32\",\"name\":\"frameDataLength\",\"type\":\"uint32\"},{\"internalType\":\"bool\",\"name\":\"isLast\",\"type\":\"bool\"},{\"internalType\":\"uint16\",\"name\":\"numL2Blocks\",\"type\":\"uint16\"}],\"internalType\":\"structLeaderElectionBatchInbox.Meta[]\",\"name\":\"_metas\",\"type\":\"tuple[]\"},{\"internalType\":\"bytes\",\"name\":\"_frames\",\"type\":\"bytes\"}],\"name\":\"submit\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // LeaderElectionBatchInboxABI is the input ABI used to generate the binding from.
@@ -188,12 +188,12 @@ func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxTransactorRaw) Transact
 	return _LeaderElectionBatchInbox.Contract.contract.Transact(opts, method, params...)
 }
 
-// CreationBlockNumber is a free data retrieval call binding the contract method 0x2b9a3fed.
+// CreationBlockNumber is a free data retrieval call binding the contract method 0x1bf30929.
 //
-// Solidity: function creation_block_number() view returns(uint256)
+// Solidity: function creationBlockNumber() view returns(uint256)
 func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxCaller) CreationBlockNumber(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _LeaderElectionBatchInbox.contract.Call(opts, &out, "creation_block_number")
+	err := _LeaderElectionBatchInbox.contract.Call(opts, &out, "creationBlockNumber")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -205,16 +205,16 @@ func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxCaller) CreationBlockNu
 
 }
 
-// CreationBlockNumber is a free data retrieval call binding the contract method 0x2b9a3fed.
+// CreationBlockNumber is a free data retrieval call binding the contract method 0x1bf30929.
 //
-// Solidity: function creation_block_number() view returns(uint256)
+// Solidity: function creationBlockNumber() view returns(uint256)
 func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxSession) CreationBlockNumber() (*big.Int, error) {
 	return _LeaderElectionBatchInbox.Contract.CreationBlockNumber(&_LeaderElectionBatchInbox.CallOpts)
 }
 
-// CreationBlockNumber is a free data retrieval call binding the contract method 0x2b9a3fed.
+// CreationBlockNumber is a free data retrieval call binding the contract method 0x1bf30929.
 //
-// Solidity: function creation_block_number() view returns(uint256)
+// Solidity: function creationBlockNumber() view returns(uint256)
 func (_LeaderElectionBatchInbox *LeaderElectionBatchInboxCallerSession) CreationBlockNumber() (*big.Int, error) {
 	return _LeaderElectionBatchInbox.Contract.CreationBlockNumber(&_LeaderElectionBatchInbox.CallOpts)
 }

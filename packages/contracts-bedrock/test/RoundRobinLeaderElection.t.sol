@@ -49,7 +49,7 @@ contract RoundRobinLeaderElectionTest is Test {
 
     function test_isLeader_success() external {
         assertEq(block.number, DEPLOYMENT_BLOCK_NUMBER);
-        assertEq(leaderContract.creation_block_number(), DEPLOYMENT_BLOCK_NUMBER);
+        assertEq(leaderContract.creationBlockNumber(), DEPLOYMENT_BLOCK_NUMBER);
 
         // No one is a leader for an old block
         for (uint256 i = 1; i <= N_PARTICIPANTS; i++) {
@@ -97,7 +97,7 @@ contract RoundRobinLeaderElectionTest is Test {
         // Happy case for first leader
         blockNumber = DEPLOYMENT_BLOCK_NUMBER;
         address leader = vm.addr(1);
-        assertTrue(leaderContract.is_participant(leader));
+        assertTrue(leaderContract.isParticipant(leader));
 
         (flag, bitmap) = leaderContract.nextBlocksAsLeader(leader, blockNumber);
         assertTrue(flag == LeaderElectionBatchInbox.LeaderStatusFlags.Scheduled);
