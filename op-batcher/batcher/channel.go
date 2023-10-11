@@ -129,8 +129,11 @@ func (s *channel) ID() derive.ChannelID {
 func (s *channel) NextTxData() txData {
 	frame := s.channelBuilder.NextFrame()
 
-	txdata := txData{frame}
+	txdata := txData{frame, false}
 	id := txdata.ID()
+
+	isCloseFrame := s.IsFull() && (s.TotalFrames() == int(id.frameNumber+1))
+	txdata.isCloseFrame = isCloseFrame
 
 	s.log.Trace("returning next tx data", "id", id)
 	s.pendingTransactions[id] = txdata

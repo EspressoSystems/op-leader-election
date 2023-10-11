@@ -134,6 +134,7 @@ func (s *channelManager) nextTxData(channel *channel) (txData, error) {
 		s.log.Trace("no next tx data")
 		return txData{}, io.EOF // TODO: not enough data error instead
 	}
+
 	tx := channel.NextTxData()
 	s.txChannels[tx.ID()] = channel
 	return tx, nil

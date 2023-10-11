@@ -527,7 +527,7 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 			ChannelId:       txdata.ID().chID,
 			FrameNumber:     txdata.ID().frameNumber,
 			FrameDataLength: uint32(txdata.Len()),
-			IsLast:          false,
+			IsLast:          txdata.isCloseFrame,
 			NumL2Blocks:     1,
 		}
 

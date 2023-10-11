@@ -92,7 +92,7 @@ func TestChannelNextTxData(t *testing.T) {
 
 	// Now the nextTxData function should return the frame
 	returnedTxData, err = m.nextTxData(channel)
-	expectedTxData := txData{frame}
+	expectedTxData := txData{frame, false}
 	expectedChannelID := expectedTxData.ID()
 	require.NoError(t, err)
 	require.Equal(t, expectedTxData, returnedTxData)
@@ -125,7 +125,7 @@ func TestChannelTxConfirmed(t *testing.T) {
 	m.currentChannel.channelBuilder.PushFrame(frame)
 	require.Equal(t, 1, m.currentChannel.PendingFrames())
 	returnedTxData, err := m.nextTxData(m.currentChannel)
-	expectedTxData := txData{frame}
+	expectedTxData := txData{frame, false}
 	expectedChannelID := expectedTxData.ID()
 	require.NoError(t, err)
 	require.Equal(t, expectedTxData, returnedTxData)
@@ -173,7 +173,7 @@ func TestChannelTxFailed(t *testing.T) {
 	m.currentChannel.channelBuilder.PushFrame(frame)
 	require.Equal(t, 1, m.currentChannel.PendingFrames())
 	returnedTxData, err := m.nextTxData(m.currentChannel)
-	expectedTxData := txData{frame}
+	expectedTxData := txData{frame, false}
 	expectedChannelID := expectedTxData.ID()
 	require.NoError(t, err)
 	require.Equal(t, expectedTxData, returnedTxData)

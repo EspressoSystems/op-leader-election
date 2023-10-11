@@ -12,7 +12,8 @@ import (
 // might change in the future to allow for multiple frames from possibly
 // different channels.
 type txData struct {
-	frame frameData
+	frame        frameData
+	isCloseFrame bool
 }
 
 // ID returns the id for this transaction data. It can be used as a map key.

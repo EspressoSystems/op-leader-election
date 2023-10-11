@@ -201,9 +201,9 @@ func ParseFrames(data []byte) ([]Frame, error) {
 			//if len(frame.Data) != int(meta.FrameDataLength) {
 			//	return nil, fmt.Errorf("frame %d frame data length does not match meta: %d != %d", i, len(frame.Data), meta.FrameDataLength)
 			//}
-			//if frame.IsLast != meta.IsLast {
-			//	return nil, fmt.Errorf("frame %d isLast does not match meta: %t != %t", i, frame.IsLast, meta.IsLast)
-			//}
+			if frame.IsLast != meta.IsLast {
+				return nil, fmt.Errorf("frame %d isLast does not match meta: %t != %t", i, frame.IsLast, meta.IsLast)
+			}
 		}
 	}
 
