@@ -211,7 +211,6 @@ func TestParseFramesFromContract(t *testing.T) {
 		FrameNumber:     frame.FrameNumber,
 		FrameDataLength: uint32(len(frame.Data)) + FrameV0OverHeadSize + 1,
 		IsLast:          frame.IsLast,
-		NumL2Blocks:     1, // TODO: This is arbitrary, currently not used anywhere.
 	}
 	metas := []bindings.LeaderElectionBatchInboxMeta{meta}
 

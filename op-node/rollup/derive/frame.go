@@ -223,7 +223,6 @@ func ParseFramesV2(data []byte) ([]bindings.LeaderElectionBatchInboxMeta, []byte
 		FrameNumber     uint16    `json:"frameNumber"`
 		FrameDataLength uint32    `json:"frameDataLength"`
 		IsLast          bool      `json:"isLast"`
-		NumL2Blocks     uint16    `json:"numL2Blocks"`
 	})
 	if !ok {
 		return nil, nil, fmt.Errorf("could not decode metas")
@@ -237,7 +236,6 @@ func ParseFramesV2(data []byte) ([]bindings.LeaderElectionBatchInboxMeta, []byte
 			FrameNumber:     anonMeta.FrameNumber,
 			FrameDataLength: anonMeta.FrameDataLength,
 			IsLast:          anonMeta.IsLast,
-			NumL2Blocks:     anonMeta.NumL2Blocks,
 		}
 	}
 
