@@ -335,7 +335,7 @@ func TestCorrectSequenceOfBatchersFourEpochs(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the presence of a wrong batcher replacing a good one
 func TestMixOfGoodAndBadBatchers(t *testing.T) {
-	// InitParallel(t)
+	InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
@@ -394,7 +394,7 @@ func TestMixOfGoodAndBadBatchers(t *testing.T) {
 
 // We produce several blocks, everything should go through despite the absence of a good batcher
 func TestMissingGoodBatcher(t *testing.T) {
-	// InitParallel(t)
+	InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
