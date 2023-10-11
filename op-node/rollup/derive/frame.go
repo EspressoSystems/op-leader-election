@@ -197,10 +197,11 @@ func ParseFrames(data []byte) ([]Frame, error) {
 				return nil, fmt.Errorf("frame %d frame number does not match meta: %d != %d", i, frame.FrameNumber, meta.FrameNumber)
 			}
 
-			// TODO uncomment when https://github.com/EspressoSystems/op-leader-election/issues/83 is done
-			//if len(frame.Data) != int(meta.FrameDataLength) {
-			//	return nil, fmt.Errorf("frame %d frame data length does not match meta: %d != %d", i, len(frame.Data), meta.FrameDataLength)
-			//}
+			lenFrameData := len(frame.Data) + FrameV0OverHeadSize + 1
+			lenFrameDataFromMetadata := int(meta.FrameDataLength)
+			if lenFrameData != lenFrameDataFromMetadata {
+				return nil, fmt.Errorf("frame %d frame data length does not match meta: %d != %d", i, lenFrameData, lenFrameDataFromMetadata)
+			}
 			if frame.IsLast != meta.IsLast {
 				return nil, fmt.Errorf("frame %d isLast does not match meta: %t != %t", i, frame.IsLast, meta.IsLast)
 			}
