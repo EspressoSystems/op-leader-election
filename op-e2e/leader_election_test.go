@@ -84,7 +84,7 @@ func getRollupClient(t *testing.T, sys *System) *sources.RollupClient {
 }
 
 func TestLeaderElectionSetup(t *testing.T) {
-	// InitParallel(t)
+	InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 	NumberOfLeaders := int(cfg.DeployConfig.LeaderElectionNumberOfLeaders)
@@ -134,7 +134,7 @@ func TestLeaderElectionSetup(t *testing.T) {
 // This test covers https://github.com/EspressoSystems/op-leader-election/issues/58 and https://github.com/EspressoSystems/op-leader-election/issues/59
 // It instantiates a single batcher (the first one out of three) and creates two L2 blocks that are correctly submitted to L1 by this batcher
 func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
-	// InitParallel(t)
+	InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 
@@ -150,8 +150,6 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 	defer sys.Close()
 
 	sys.InitLeaderBatchInboxContract(t, accounts)
-
-	//require.Equal(t, sys.BatchSubmitters[0].Config.BatchInboxVersion, cfg.DeployConfig.InitialBatcherVersion)
 
 	aliceKey := sys.cfg.Secrets.Alice
 
@@ -204,7 +202,7 @@ func TestLeaderElectionCorrectBatcherSendsTwoBlocks(t *testing.T) {
 }
 
 func TestLeaderElectionWrongBatcher(t *testing.T) {
-	// InitParallel(t)
+	InitParallel(t)
 
 	cfg := defaultConfigWithSmallSequencingWindow(t)
 

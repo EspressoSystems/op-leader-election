@@ -14,7 +14,7 @@ import (
 )
 
 func TestLeaderElectionSwitchBatcherFromV1ToV2(t *testing.T) {
-	// InitParallel(t)
+	InitParallel(t)
 
 	cfg := DefaultSystemConfig(t)
 
