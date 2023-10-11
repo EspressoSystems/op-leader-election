@@ -76,7 +76,7 @@ func (ch *Channel) AddFrame(frame Frame, l1InclusionBlock eth.L1BlockRef) error 
 			if id >= uint64(ch.endFrameNumber) {
 				delete(ch.inputs, id)
 			}
-			ch.size -= FrameSize(prunedFrame)
+			ch.size -= frameSize(prunedFrame)
 		}
 		ch.highestFrameNumber = ch.endFrameNumber
 	}
@@ -89,7 +89,7 @@ func (ch *Channel) AddFrame(frame Frame, l1InclusionBlock eth.L1BlockRef) error 
 		ch.highestL1InclusionBlock = l1InclusionBlock
 	}
 	ch.inputs[uint64(frame.FrameNumber)] = frame
-	ch.size += FrameSize(frame)
+	ch.size += frameSize(frame)
 
 	return nil
 }
