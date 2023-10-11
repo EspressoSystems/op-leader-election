@@ -528,6 +528,7 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 			FrameNumber:     txdata.ID().frameNumber,
 			FrameDataLength: uint32(txdata.Len()),
 			IsLast:          false,
+			NumL2Blocks:     1,
 		}
 
 		metas := []bindings.LeaderElectionBatchInboxMeta{meta}

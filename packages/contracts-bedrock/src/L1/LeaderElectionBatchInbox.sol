@@ -19,6 +19,8 @@ abstract contract LeaderElectionBatchInbox {
         uint16 frameNumber;
         uint32 frameDataLength;
         bool isLast;
+        /// The number of L2 blocks in this channel (including the current frame).
+        uint16 numL2Blocks;
     }
 
     /// @notice insert a new participant in the leaders' list
