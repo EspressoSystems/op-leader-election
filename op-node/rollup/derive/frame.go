@@ -236,7 +236,6 @@ func ParseFramesV2(data []byte) ([]bindings.LeaderElectionBatchInboxMeta, []byte
 			FrameNumber:     anonMeta.FrameNumber,
 			FrameDataLength: anonMeta.FrameDataLength,
 			IsLast:          anonMeta.IsLast,
-			NumL2Blocks:     anonMeta.NumL2Blocks,
 		}
 	}
 
