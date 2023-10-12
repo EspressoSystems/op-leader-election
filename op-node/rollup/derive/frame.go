@@ -197,13 +197,14 @@ func ParseFrames(data []byte) ([]Frame, error) {
 				return nil, fmt.Errorf("frame %d frame number does not match meta: %d != %d", i, frame.FrameNumber, meta.FrameNumber)
 			}
 
-			// TODO uncomment when https://github.com/EspressoSystems/op-leader-election/issues/83 is done
-			//if len(frame.Data) != int(meta.FrameDataLength) {
-			//	return nil, fmt.Errorf("frame %d frame data length does not match meta: %d != %d", i, len(frame.Data), meta.FrameDataLength)
-			//}
-			//if frame.IsLast != meta.IsLast {
-			//	return nil, fmt.Errorf("frame %d isLast does not match meta: %t != %t", i, frame.IsLast, meta.IsLast)
-			//}
+			lenFrameData := len(frame.Data) + FrameV0OverHeadSize + 1
+			lenFrameDataFromMetadata := int(meta.FrameDataLength)
+			if lenFrameData != lenFrameDataFromMetadata {
+				return nil, fmt.Errorf("frame %d frame data length does not match meta: %d != %d", i, lenFrameData, lenFrameDataFromMetadata)
+			}
+			if frame.IsLast != meta.IsLast {
+				return nil, fmt.Errorf("frame %d isLast does not match meta: %t != %t", i, frame.IsLast, meta.IsLast)
+			}
 		}
 	}
 
@@ -222,7 +223,6 @@ func ParseFramesV2(data []byte) ([]bindings.LeaderElectionBatchInboxMeta, []byte
 		FrameNumber     uint16    `json:"frameNumber"`
 		FrameDataLength uint32    `json:"frameDataLength"`
 		IsLast          bool      `json:"isLast"`
-		NumL2Blocks     uint16    `json:"numL2Blocks"`
 	})
 	if !ok {
 		return nil, nil, fmt.Errorf("could not decode metas")
@@ -236,7 +236,6 @@ func ParseFramesV2(data []byte) ([]bindings.LeaderElectionBatchInboxMeta, []byte
 			FrameNumber:     anonMeta.FrameNumber,
 			FrameDataLength: anonMeta.FrameDataLength,
 			IsLast:          anonMeta.IsLast,
-			NumL2Blocks:     anonMeta.NumL2Blocks,
 		}
 	}
 

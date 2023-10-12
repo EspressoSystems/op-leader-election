@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-bindings/solc"
 )
 
-const LeaderElectionBatchInboxStorageLayoutJSON = "{\"storage\":[{\"astId\":1000,\"contract\":\"src/L1/LeaderElectionBatchInbox.sol:LeaderElectionBatchInbox\",\"label\":\"creation_block_number\",\"offset\":0,\"slot\":\"0\",\"type\":\"t_uint256\"}],\"types\":{\"t_uint256\":{\"encoding\":\"inplace\",\"label\":\"uint256\",\"numberOfBytes\":\"32\"}}}"
+const LeaderElectionBatchInboxStorageLayoutJSON = "{\"storage\":[{\"astId\":1000,\"contract\":\"src/L1/LeaderElectionBatchInbox.sol:LeaderElectionBatchInbox\",\"label\":\"creationBlockNumber\",\"offset\":0,\"slot\":\"0\",\"type\":\"t_uint256\"}],\"types\":{\"t_uint256\":{\"encoding\":\"inplace\",\"label\":\"uint256\",\"numberOfBytes\":\"32\"}}}"
 
 var LeaderElectionBatchInboxStorageLayout = new(solc.StorageLayout)
 

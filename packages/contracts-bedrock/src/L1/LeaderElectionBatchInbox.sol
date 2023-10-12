@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 /// @notice Interface for implementing a leader election scheme
 
 abstract contract LeaderElectionBatchInbox {
-    uint256 public creation_block_number;
+    uint256 public creationBlockNumber;
 
     enum LeaderStatusFlags {
         Scheduled,
@@ -19,8 +19,6 @@ abstract contract LeaderElectionBatchInbox {
         uint16 frameNumber;
         uint32 frameDataLength;
         bool isLast;
-        /// The number of L2 blocks in this channel (including the current frame).
-        uint16 numL2Blocks;
     }
 
     /// @notice insert a new participant in the leaders' list

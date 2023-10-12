@@ -10,23 +10,23 @@ import { LeaderElectionBatchInbox } from "./LeaderElectionBatchInbox.sol";
 
 contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeable, Semver {
     // @notice The number of leader slots that can be checked in advance
-    uint256 public max_number_participants;
-    uint256 public number_of_slots_per_leader;
+    uint256 public maxNumberParticipants;
+    uint256 public numberOfSlotsPerLeader;
     uint256 public horizon;
-    uint32 private index_last_inserted_participant;
+    uint32 private indexLastInsertedParticipant;
 
     mapping(uint256 => address) public participants;
-    mapping(address => bool) public is_participant;
+    mapping(address => bool) public isParticipant;
     // TODO No need to be public, just for testing purposes. Do this more cleanly
 
     constructor() Semver(0, 1, 0) {
-        initialize({ _owner: address(0xdEaD), _max_number_participants: 0, _number_of_slots_per_leader: 0 });
+        initialize({ _owner: address(0xdEaD), _maxNumberParticipants: 0, _numberOfSlotsPerLeader: 0 });
     }
 
     function initialize(
         address _owner,
-        uint256 _max_number_participants,
-        uint256 _number_of_slots_per_leader
+        uint256 _maxNumberParticipants,
+        uint256 _numberOfSlotsPerLeader
     )
         public
         reinitializer(2)
@@ -34,35 +34,35 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
         __Ownable_init();
         transferOwnership(_owner);
 
-        max_number_participants = _max_number_participants;
-        number_of_slots_per_leader = _number_of_slots_per_leader;
-        creation_block_number = block.number;
-        horizon = max_number_participants * number_of_slots_per_leader;
+        maxNumberParticipants = _maxNumberParticipants;
+        numberOfSlotsPerLeader = _numberOfSlotsPerLeader;
+        creationBlockNumber = block.number;
+        horizon = maxNumberParticipants * numberOfSlotsPerLeader;
     }
 
     // TODO for production purposes it might be desirable to make this function "onlyOwner". However the tests would be
     // harder to write. See ticket https://github.com/EspressoSystems/op-leader-election/issues/73
     function addParticipant(address _addr) public override {
         require(
-            index_last_inserted_participant < max_number_participants,
+            indexLastInsertedParticipant < maxNumberParticipants,
             "RoundRobinLeaderElection: list of participants is full."
         );
 
-        participants[index_last_inserted_participant] = _addr;
-        is_participant[_addr] = true;
-        index_last_inserted_participant++;
+        participants[indexLastInsertedParticipant] = _addr;
+        isParticipant[_addr] = true;
+        indexLastInsertedParticipant++;
     }
 
     function isCurrentLeader(address _leaderId, uint256 _blockNumber) external view override returns (bool) {
-        if (_blockNumber < creation_block_number) {
+        if (_blockNumber < creationBlockNumber) {
             // if the block number is "too old" then no one is leader
             return false;
         } else {
-            uint32 number_participants = index_last_inserted_participant;
-            uint256 range_from_creation =
-                (_blockNumber - creation_block_number) % (number_participants * number_of_slots_per_leader);
-            uint256 index_leader = range_from_creation / number_of_slots_per_leader;
-            return participants[index_leader] == _leaderId;
+            uint32 numberParticipants = indexLastInsertedParticipant;
+            uint256 rangeFromCreation =
+                (_blockNumber - creationBlockNumber) % (numberParticipants * numberOfSlotsPerLeader);
+            uint256 indexLeader = rangeFromCreation / numberOfSlotsPerLeader;
+            return participants[indexLeader] == _leaderId;
         }
     }
 
@@ -75,7 +75,7 @@ contract RoundRobinLeaderElection is LeaderElectionBatchInbox, OwnableUpgradeabl
         override
         returns (LeaderStatusFlags, bool[] memory)
     {
-        if (!this.is_participant(_leaderId)) {
+        if (!this.isParticipant(_leaderId)) {
             bool[] memory emptyArray;
             return (LeaderStatusFlags.Invalid, emptyArray);
         } else {
