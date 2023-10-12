@@ -128,7 +128,9 @@ export class OptimismPlugin extends Web3PluginBase {
     return Web3.utils.format(
       { format: 'uint' },
       await this._getPriceOracleContractInstance()
-        .methods.getL1GasUsed(this._serializeTransaction(transaction))
+        .methods.getL1GasUsed(
+          this._serializeTransaction(transaction)
+        )
         .call(),
       returnFormat ?? DEFAULT_RETURN_FORMAT
     )
@@ -255,7 +257,10 @@ export class OptimismPlugin extends Web3PluginBase {
    */
   public async estimateFees<
     ReturnFormat extends DataFormat = typeof DEFAULT_RETURN_FORMAT
-  >(transaction: Transaction, returnFormat?: ReturnFormat) {
+  >(
+    transaction: Transaction,
+    returnFormat?: ReturnFormat
+  ) {
     const [l1Fee, l2Fee] = await Promise.all([
       this.getL1Fee(transaction),
       this.getL2Fee(transaction),
